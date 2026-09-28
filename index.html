@@ -16,8 +16,9 @@
 <script src="campings.js?v=4"></script>
 <script src="vocabulario.js?v=4"></script>
 <script src="voces.js?v=10"></script>
-<script src="audios.js?v=10"></script>
-<script src="casting.js?v=10"></script>
+<script src="audios.js?v=10" defer></script>
+<script src="casting.js?v=10" defer></script>
+<script src="extras.js?v=4" defer></script>
 <script src="anime.js?v=8"></script>
 <script src="lugares.js?v=8"></script>
 <style>
@@ -1087,7 +1088,7 @@ async function pintarTiempo(i) {
   try {
     if (!t || Date.now() - t.hora > 30 * 60e3) {
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lng}&current=temperature_2m,weather_code,wind_speed_10m`
-        + '&hourly=cloud_cover_low,cloud_cover_mid&daily=temperature_2m_min,temperature_2m_max,sunrise&timezone=Asia%2FTokyo&forecast_days=2';
+        + '&hourly=cloud_cover_low,cloud_cover_mid,cloud_cover&daily=temperature_2m_min,temperature_2m_max,sunrise,sunset&timezone=Asia%2FTokyo&forecast_days=2';
       const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       t = { datos: await r.json(), hora: Date.now() }; cacheTiempo.set(i, t);
@@ -1107,7 +1108,7 @@ async function pintarTiempo(i) {
     <div class="tiempo"><div class="grande">${emo}</div><div class="temp">${Math.round(d.current.temperature_2m)} °C</div>
       <div style="flex:1;min-width:150px"><b class="jp" style="font-size:18px">${kanji}</b> <span class="jp sub">${kana}</span> — ${es}<br>
       <small class="sub">Esta noche ${Math.round(d.daily.temperature_2m_min[0])} °C · máx. ${Math.round(d.daily.temperature_2m_max[0])} °C · viento ${Math.round(d.current.wind_speed_10m)} km/h</small></div>
-      <button class="hablar" id="f-tiempo-voz">🔊</button></div>${fuji}
+      <button class="hablar" id="f-tiempo-voz">🔊</button></div>${fuji}${window.cieloDeNoche?.(d, c) || ''}
     ${d.daily.temperature_2m_min[0] <= 0 ? '<div class="fuji-hoy">🥶 <b class="jp">氷点下</b> (ひょうてんか): bajo cero esta noche. Saco de invierno y カイロ.</div>' : ''}`;
   $('#f-tiempo-voz').onclick = () => hablar(`今日は${kanji}、気温は${Math.round(d.current.temperature_2m)}度です`, c.quien[0]);
 }
@@ -1275,6 +1276,7 @@ function pintarMenuQuiz() {
   document.querySelectorAll('.modo').forEach(b => b.onclick = () => empezarQuiz(b.dataset.m));
 }
 function preguntaDe(modo) {
+  if (MODOS[modo].pregunta) return MODOS[modo].pregunta(); // modos que añade extras.js
   const conFoto = CAMPINGS.filter(c => c.fotos.length);
   const distintas = (bien, todos, clave) => baraja([bien, ...baraja(todos.filter(x => clave(x) !== clave(bien))).filter((x, i, a) => a.findIndex(y => clave(y) === clave(x)) === i).slice(0, 3)]);
   if (modo === 'ja_es' || modo === 'es_ja' || modo === 'oido') {
@@ -1346,6 +1348,7 @@ function siguientePregunta() {
     b.parentElement.dataset.hecho = 1;
     const ok = q.ops[+b.dataset.i].ok;
     document.querySelectorAll('.opcion').forEach((x, i) => q.ops[i].ok && x.classList.add('bien'));
+    q.alResponder?.(ok);
     if (ok) { p.puntos++; p.racha++; if (p.racha % 3 === 0) confeti(['🔥', '⭐']); }
     else { b.classList.add('mal'); p.racha = 0; }
     $('#explica').innerHTML = `${ok ? '✅ ¡Bien!' : '❌ Casi.'} <span class="jp">${esc(q.explica)}</span>`;
