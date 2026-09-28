@@ -13,12 +13,13 @@
 <link rel="apple-touch-icon" href="iconos/apple-touch-icon.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="idiomas.js?v=2"></script>
 <script src="campings.js?v=4"></script>
 <script src="vocabulario.js?v=4"></script>
 <script src="voces.js?v=10"></script>
 <script src="audios.js?v=10" defer></script>
 <script src="casting.js?v=10" defer></script>
-<script src="extras.js?v=4" defer></script>
+<script src="extras.js?v=6" defer></script>
 <script src="anime.js?v=8"></script>
 <script src="lugares.js?v=8"></script>
 <style>
@@ -595,7 +596,7 @@
     <h1>⛺ <span class="jp">ゆるキャン△</span> Mapa</h1>
     <p class="sub" id="contador"></p>
     <div class="fila-buscar"><input id="buscar" type="search" placeholder="🔎 Camping, kanji o personaje…" autocomplete="off">
-      <button class="chip" id="ver-filtros">⚙︎ Filtros</button><button class="chip" id="instalar" hidden>📲 Instalar</button></div>
+      <button class="chip" id="ver-filtros">⚙︎ Filtros</button><button class="chip" id="idioma" aria-label="Idioma · Language"></button><button class="chip" id="instalar" hidden>📲 Instalar</button></div>
   </header>
   <div id="filtros" class="fino"></div>
   <div class="fila-orden"><span id="orden-txt">Orden del anime</span><button class="chip" id="cerca">📍 Cerca de mí</button></div>
@@ -659,6 +660,7 @@ if (typeof CAMPINGS === 'undefined' || typeof VOCABULARIO === 'undefined' || typ
   document.body.innerHTML = '<p style="padding:40px">No se pudieron cargar los datos o el mapa (¿sin conexión?).</p>';
   throw new Error('Faltan campings.js, vocabulario.js, voces.js o Leaflet');
 }
+traducirDatos(); traducirPagina();
 
 /* ================= Datos fijos ================= */
 // En el Mac se usan las capturas guardadas en fotos/; en la web pública, las del mapa de fans
@@ -678,7 +680,7 @@ const PERSONAJES = {
 const PAISAJES = { lago: '🏞️ Lago', mar: '🌊 Mar', 'montaña': '⛰️ Montaña', 'río': '💧 Río', bosque: '🌲 Bosque', meseta: '🌾 Meseta', pradera: '🌿 Pradera' };
 const ESTACIONES = { 'otoño': '🍁 Otoño', invierno: '❄️ Invierno', primavera: '🌸 Primavera', verano: '☀️ Verano' };
 const RANGOS = [[0, '🏠 Novata de へやキャン'], [1, '🔥 Encendiste la primera hoguera'], [3, '🏕️ Miembro del 野クル'],
-  [6, '🛵 Campista solitaria como Rin'], [10, '🗻 Cazadora de Fujis'], [15, '🎖️ Maestra ゆるキャン'], [CAMPINGS.length, '👑 Leyenda de Yamanashi']];
+  [6, '🛵 Campista solitaria como Rin'], [10, '🗻 Cazadora de Fujis'], [15, '🎖️ Maestra ゆるキャン'], [CAMPINGS.length, '👑 Leyenda de Yamanashi']].map(([n, s]) => [n, tr(s)]);
 const MOCHILA = [
   { voz: 'rin', titulo: '🛌 Dormir', cosas: [['テント', 'tienda'], ['寝袋', 'saco de dormir'], ['マット', 'esterilla'], ['枕', 'almohada (まくら)']] },
   { voz: 'aoi', titulo: '🔥 Fuego y cocina', cosas: [['焚き火台', 'brasero'], ['薪', 'leña'], ['着火剤', 'pastilla de encendido'], ['バーナー', 'hornillo'],
@@ -686,7 +688,7 @@ const MOCHILA = [
   { voz: 'ena', titulo: '🧥 Ropa y frío', cosas: [['防寒着', 'ropa de abrigo'], ['カイロ', 'calentadores'], ['軍手', 'guantes'], ['雨具', 'ropa de lluvia']] },
   { voz: 'chiaki', titulo: '🔦 Luz y montaje', cosas: [['ランタン', 'farol'], ['ヘッドライト', 'linterna frontal'], ['ペグ', 'piquetas'], ['ハンマー', 'martillo'], ['電池', 'pilas']] },
   { voz: 'sakura', titulo: '🧭 Viaje', cosas: [['地図', 'mapa (sin cobertura en la montaña)'], ['水筒', 'cantimplora'], ['ゴミ袋', 'bolsa de basura (ごみぶくろ)'], ['予約確認', 'confirmación de la reserva (よやくかくにん)']] },
-];
+].map(s => ({ ...s, titulo: tr(s.titulo), cosas: s.cosas.map(([w, es]) => [w, td(es)]) }));
 // Cada tema de vocabulario lo dice la chica que más pega con él
 const VOZ_CATEGORIA = { equipo: 'chiaki', fuego: 'aoi', camping: 'rin', naturaleza: 'ena', carretera: 'sakura', gps: 'ayano', sitios: 'nadeshiko', frases: 'toba', anime: 'nadeshiko' };
 const vozPalabra = cat => Voz.ajustes.soloGuia ? Voz.guia : (VOZ_CATEGORIA[cat] || Voz.guia);
@@ -792,12 +794,12 @@ const MUESTRA_ESTILO = { satelite: 'linear-gradient(135deg,#1f3b2a,#4a6b3a 50%,#
   foto: 'linear-gradient(135deg,#3d4a2d,#6e7b4a 50%,#8a9aa8)', relieve: 'linear-gradient(135deg,#e9e4c9,#c6d8a8 40%,#b89f7c)',
   natgeo: 'linear-gradient(135deg,#efe4c4,#d9c79a 50%,#9fc4d8)', noche: 'radial-gradient(circle at 30% 30%,#fff 1px,transparent 2px),linear-gradient(135deg,#1a1f3a,#2d1b44)' };
 function pintarEstilos() {
-  $('#estilos').innerHTML = ESTILOS.map(([k, t]) => `<button class="estilo ${estilo === k ? 'activo' : ''}" data-estilo="${k}"><i style="background:${MUESTRA_ESTILO[k]}"></i>${t.split(' ').slice(1).join(' ')}</button>`).join('');
+  $('#estilos').innerHTML = ESTILOS.map(([k, t]) => `<button class="estilo ${estilo === k ? 'activo' : ''}" data-estilo="${k}"><i style="background:${MUESTRA_ESTILO[k]}"></i>${tr(t.split(' ').slice(1).join(' '))}</button>`).join('');
   $('#estilos').querySelectorAll('[data-estilo]').forEach(b => b.onclick = () => ponerEstilo(b.dataset.estilo));
-  $('#extras').innerHTML = Object.entries(EXTRAS).map(([k, x]) => `<button class="capa-lugar ${extrasOn.has(k) ? 'activo' : ''}" data-extra="${k}"><span>${x.t}</span></button>`).join('');
+  $('#extras').innerHTML = Object.entries(EXTRAS).map(([k, x]) => `<button class="capa-lugar ${extrasOn.has(k) ? 'activo' : ''}" data-extra="${k}"><span>${tr(x.t)}</span></button>`).join('');
   $('#extras').querySelectorAll('[data-extra]').forEach(b => b.onclick = () => alternarExtra(b.dataset.extra));
   const creditos = new Set([ESTILOS.find(e => e[0] === estilo)[3], ...[...extrasOn].map(k => EXTRAS[k].credito).filter(Boolean)]);
-  $('#creditos-mapa').textContent = `Mapa: ${[...creditos].join(' · ')} · Leaflet · Capturas: ©あfろ・芳文社／野外活動委員会`;
+  $('#creditos-mapa').textContent = `${tr('Mapa')}: ${[...creditos].join(' · ')} · Leaflet · ${tr('Capturas')}: ©あfろ・芳文社／野外活動委員会`;
 }
 async function capaLluvia() {
   // Última imagen del radar de la JMA (se actualiza cada 5 min)
@@ -811,13 +813,13 @@ async function alternarExtra(k) {
   guardado.escribir('extras', [...extrasOn]);
   await aplicarExtra(k);
   pintarEstilos();
-  if (on && k === 'lluvia') avisar('🌧️ Radar de lluvia de la JMA (hace menos de 5 min)');
+  if (on && k === 'lluvia') avisar(tr('🌧️ Radar de lluvia de la JMA (hace menos de 5 min)'));
 }
 async function aplicarExtra(k) {
   const on = extrasOn.has(k), x = EXTRAS[k];
   if (k === 'ruta') return dibujarRuta?.();
   if (k === 'lluvia' && on && !x.capa) {
-    try { x.capa = await capaLluvia(); } catch { extrasOn.delete(k); return avisar('No he podido cargar el radar de lluvia (¿sin conexión?)'); }
+    try { x.capa = await capaLluvia(); } catch { extrasOn.delete(k); return avisar(tr('No he podido cargar el radar de lluvia (¿sin conexión?)')); }
   }
   if (!x.capa) return;
   on ? x.capa.addTo(mapa) : mapa.removeLayer(x.capa);
@@ -832,7 +834,7 @@ $('#yo').onclick = () => $('#cerca').onclick();
 
 /* ----- El Fuji, siempre a la vista ----- */
 L.marker([35.3606, 138.7274], { icon: L.divIcon({ className: '', iconSize: [80, 70], iconAnchor: [40, 50], html: '<div class="fuji-marca">🗻<small class="jp">富士山</small></div>' }), zIndexOffset: -100 })
-  .addTo(mapa).on('click', () => { Voz.decir('富士山だ〜！きれい〜！', 'nadeshiko', { traduccion: '¡Es el Fuji! ¡Qué bonito! (ふじさん, 3.776 m)' }); });
+  .addTo(mapa).on('click', () => { Voz.decir('富士山だ〜！きれい〜！', 'nadeshiko', { traduccion: tr('¡Es el Fuji! ¡Qué bonito! (ふじさん, 3.776 m)') }); });
 
 /* ----- Hojas que caen según la estación del año ----- */
 const PARTICULAS = { primavera: ['🌸', '🌸', '🌼'], verano: ['✨', '🌿', '✨'], 'otoño': ['🍁', '🍂', '🍁'], invierno: ['❄️', '❄️', '⛄'] };
@@ -843,7 +845,7 @@ function pintarParticulas() {
   if (!caja) { caja = document.createElement('div'); caja.id = 'particulas'; $('#mapa').appendChild(caja); }
   caja.innerHTML = '';
   $('#estacion').textContent = PARTICULAS[estacionHoy][0];
-  $('#estacion').title = (conParticulas ? 'Quitar' : 'Poner') + ' el efecto de ' + ESTACIONES[estacionHoy].split(' ')[1].toLowerCase();
+  $('#estacion').title = tr(conParticulas ? 'Quitar el efecto de la estación' : 'Poner el efecto de la estación');
   $('#estacion').classList.toggle('activo', conParticulas);
   if (!conParticulas) return;
   for (let n = 0; n < (esMovil() ? 9 : 16); n++) {
@@ -909,11 +911,11 @@ function globoLugar(i) {
       <h3 class="jp">${esc(l.n)}</h3>
       ${l.nota && !/^\s*$/.test(l.nota) ? `<p class="sub" style="font-size:12.5px">${esc(l.nota)}</p>` : ''}
       <div class="palabra"><b class="jp">${esc(pk)}</b><div style="flex:1"><b class="jp" style="font-size:14px">${esc(pkana)}</b> — ${esc(pes)}<br>
-        <small class="sub">te lo dice ${PERSONAJES[voz].emoji} ${PERSONAJES[voz].nombre}</small></div><button class="hablar" data-p="1">🔊</button></div>
+        <small class="sub">${tr('te lo dice')} ${PERSONAJES[voz].emoji} ${PERSONAJES[voz].nombre}</small></div><button class="hablar" data-p="1">🔊</button></div>
       <div class="acciones">
-        <button class="boton" data-nombre="1">🔊 Oír el nombre</button>
-        <button class="boton ${lugaresVistos.has(i) ? 'hecho' : ''}" data-visto="1">${lugaresVistos.has(i) ? '💮 Estuve' : '📍 Estuve aquí'}</button>
-        <a class="boton grande" href="https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lng}" target="_blank" rel="noopener">🚗 Cómo llegar</a>
+        <button class="boton" data-nombre="1">${tr('🔊 Oír el nombre')}</button>
+        <button class="boton ${lugaresVistos.has(i) ? 'hecho' : ''}" data-visto="1">${tr(lugaresVistos.has(i) ? '💮 Estuve' : '📍 Estuve aquí')}</button>
+        <a class="boton grande" href="https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lng}" target="_blank" rel="noopener">${tr('🚗 Cómo llegar')}</a>
       </div></div>`;
   div.querySelector('[data-p]').onclick = () => hablar(pk, voz);
   div.querySelector('[data-nombre]').onclick = () => hablar(l.n.replace(/（.*?）|\(.*?\)/g, ''), voz);
@@ -922,7 +924,7 @@ function globoLugar(i) {
     lugaresVistos.has(i) ? lugaresVistos.delete(i) : (lugaresVistos.add(i), confeti([cat.emoji, '💮', '✨']), Voz.reaccionar(voz, 'bien'));
     guardado.escribir('lugaresVistos', [...lugaresVistos]);
     marcasLugar[i].options.visto = lugaresVistos.has(i); marcasLugar[i].redraw();
-    e.currentTarget.classList.toggle('hecho', lugaresVistos.has(i)); e.currentTarget.textContent = lugaresVistos.has(i) ? '💮 Estuve' : '📍 Estuve aquí';
+    e.currentTarget.classList.toggle('hecho', lugaresVistos.has(i)); e.currentTarget.textContent = tr(lugaresVistos.has(i) ? '💮 Estuve' : '📍 Estuve aquí');
   };
   return div;
 }
@@ -931,12 +933,12 @@ function pintarCapasLugar() {
   const ORDEN = ['casa', 'escuela', 'banco', 'fuji', 'onsen', 'estacion', 'templo', 'comida', 'tienda', 'puente', 'naturaleza', 'escena'];
   $('#capas-lugar').innerHTML = ORDEN.map(c => [c, CATEGORIAS_LUGAR[c]]).map(([c, d]) =>
     `<button class="capa-lugar ${capasLugar.has(c) ? 'activo' : ''}" data-capa="${c}"><span class="ico" style="background:${COLOR_LUGAR[c]}">${d.emoji}</span>
-      <span>${esc(d.titulo)}<small>${n(c)} sitios</small></span></button>`).join('');
+      <span>${esc(d.titulo)}<small>${tr('{n} sitios', { n: n(c) })}</small></span></button>`).join('');
   $('#capas-lugar').querySelectorAll('[data-capa]').forEach(b => b.onclick = () => {
     const c = b.dataset.capa, on = !capasLugar.has(c);
     on ? capasLugar.add(c) : capasLugar.delete(c);
     guardado.escribir('capasLugar', [...capasLugar]); ponerCapasLugar(); pintarCapasLugar();
-    if (on) { const d = CATEGORIAS_LUGAR[c]; hablar(d.palabra[0], d.voz); avisar(`${d.emoji} ${d.titulo}: ${n(c)} en el mapa` + (mapa.getZoom() < ZOOM_LUGARES ? ' · acércate para verlos' : '')); }
+    if (on) { const d = CATEGORIAS_LUGAR[c]; hablar(d.palabra[0], d.voz); avisar(`${d.emoji} ${d.titulo}: ${tr('{n} en el mapa', { n: n(c) })}` + (mapa.getZoom() < ZOOM_LUGARES ? ' · ' + tr('acércate para verlos') : '')); }
   });
 }
 const ZOOM_LUGARES = 9; // de lejos los lugares se amontonan: se muestran al acercarse
@@ -976,7 +978,7 @@ function pasa(c, i) {
 }
 function pintarFiltros() {
   $('#filtros').innerHTML = GRUPOS.map(([g, ops]) => `<div class="grupo">${Object.entries(ops).map(([k, v]) =>
-    `<button class="chip ${filtro[g] === k ? 'activo' : ''}" data-g="${g}" data-k="${esc(k)}">${esc(v)}</button>`).join('')}</div>`).join('');
+    `<button class="chip ${filtro[g] === k ? 'activo' : ''}" data-g="${g}" data-k="${esc(k)}">${esc(tr(v))}</button>`).join('')}</div>`).join('');
   document.querySelectorAll('#filtros .chip').forEach(b => b.onclick = () => { filtro[b.dataset.g] = b.dataset.k; actualizarMapa(true); });
 }
 let miPosicion = null;
@@ -986,7 +988,7 @@ function visibles() {
   return idx;
 }
 function pintarLista(idx) {
-  $('#contador').textContent = `${idx.length} de ${CAMPINGS.length} campings · 💮 ${visitados.size} visitados`;
+  $('#contador').textContent = tr('{n} de {total} campings · 💮 {v} visitados', { n: idx.length, total: CAMPINGS.length, v: visitados.size });
   $('#lista').innerHTML = idx.length ? idx.map(i => {
     const c = CAMPINGS[i];
     const mini = c.fotos[0] ? `<img decoding="async" src="${c.fotos[0]}" alt="" loading="lazy">` : '<div class="sinfoto">⛺</div>';
@@ -994,7 +996,7 @@ function pintarLista(idx) {
     return `<div class="item ${i === seleccionado ? 'sel' : ''}" data-i="${i}">${mini}${visitados.has(i) ? '<span class="sello-mini">💮</span>' : ''}
       <div><b>${esc(c.nombre)} <span class="jp" style="font-weight:400;color:var(--suave);font-size:12px">${esc(c.ja.split(' ')[0])}</span></b>
       <small><span class="punto" style="background:${COLORES[c.temporada]}"></span>${esc(c.ep)} · ${c.quien.map(q => PERSONAJES[q].emoji).join('')}${dist}</small></div></div>`;
-  }).join('') : '<div class="vacia">🏕️ Ningún camping cumple estos filtros.<br>Prueba a quitar alguno.</div>';
+  }).join('') : `<div class="vacia">${tr('🏕️ Ningún camping cumple estos filtros.')}<br>${tr('Prueba a quitar alguno.')}</div>`;
   document.querySelectorAll('.item').forEach(el => el.onclick = () => abrirFicha(+el.dataset.i));
 }
 function actualizarMapa(encuadrar) {
@@ -1011,18 +1013,18 @@ $('#buscar').oninput = e => { filtro.texto = e.target.value.trim(); actualizarMa
 
 let marcaYo = null;
 $('#cerca').onclick = () => {
-  if (!navigator.geolocation) return avisar('Este navegador no da tu ubicación');
-  avisar('📍 Buscando dónde estás…');
+  if (!navigator.geolocation) return avisar(tr('Este navegador no da tu ubicación'));
+  avisar(tr('📍 Buscando dónde estás…'));
   navigator.geolocation.getCurrentPosition(p => {
     miPosicion = [p.coords.latitude, p.coords.longitude];
     if (marcaYo) mapa.removeLayer(marcaYo);
-    marcaYo = L.marker(miPosicion, { icon: L.divIcon({ className: '', html: '<div class="yo"></div>', iconSize: [18, 18] }) }).addTo(mapa).bindTooltip('Tú', { className: 'cristal-tt' });
-    $('#orden-txt').textContent = 'Ordenados por distancia';
+    marcaYo = L.marker(miPosicion, { icon: L.divIcon({ className: '', html: '<div class="yo"></div>', iconSize: [18, 18] }) }).addTo(mapa).bindTooltip(tr('Tú'), { className: 'cristal-tt' });
+    $('#orden-txt').textContent = tr('Ordenados por distancia');
     $('#cerca').classList.add('activo');
     const i = visibles()[0];
-    avisar(`🏕️ El más cercano: ${CAMPINGS[i].nombre}, a ${Math.round(km(miPosicion, [CAMPINGS[i].lat, CAMPINGS[i].lng]))} km`);
+    avisar(tr('🏕️ El más cercano: {nombre}, a {n} km', { nombre: CAMPINGS[i].nombre, n: Math.round(km(miPosicion, [CAMPINGS[i].lat, CAMPINGS[i].lng])) }));
     actualizarMapa(true);
-  }, err => avisar('No he podido saber tu ubicación: ' + (err.code === 1 ? 'permiso denegado' : 'sin señal')), { enableHighAccuracy: true, timeout: 12000 });
+  }, err => avisar(tr('No he podido saber tu ubicación') + ': ' + tr(err.code === 1 ? 'permiso denegado' : 'sin señal')), { enableHighAccuracy: true, timeout: 12000 });
 };
 
 /* ================= Ficha ================= */
@@ -1032,44 +1034,44 @@ function abrirFicha(i) {
   refrescarIcono(i);
   const c = CAMPINGS[i];
   const portada = c.fotos[0] ? `<img decoding="async" src="${c.fotos[0]}" alt="Escena del anime en ${esc(c.nombre)}" data-grande>` : '<div class="sinfoto">🎬</div>';
-  const dist = miPosicion ? `<span class="etq">📍 a ${Math.round(km(miPosicion, [c.lat, c.lng]))} km de ti</span>` : '';
+  const dist = miPosicion ? `<span class="etq">${tr('📍 a {n} km de ti', { n: Math.round(km(miPosicion, [c.lat, c.lng])) })}</span>` : '';
   const [pk, pkana, pes] = c.palabra;
   $('#ficha').innerHTML = `
     <button class="cerrar" id="f-cerrar" aria-label="Cerrar">✕</button><div class="portada">${portada}
       <div class="titulo"><div class="etq" style="display:inline-block;background:${COLORES[c.temporada]};border:0;text-shadow:none;color:#111">${esc(c.ep)}</div><h2>${esc(c.nombre)}</h2></div></div>
     <div class="cuerpo">
-      <div class="nombre-ja">${ruby(c.ja, c.kana)} <button class="hablar" data-decir="${esc(c.kana)}">🔊 Escuchar</button></div>
+      <div class="nombre-ja">${ruby(c.ja, c.kana)} <button class="hablar" data-decir="${esc(c.kana)}">${tr('🔊 Escuchar')}</button></div>
       <div class="etiquetas">
         ${c.quien.map(q => `<button class="etq" data-saluda="${q}" style="cursor:pointer;border-color:${FICHAS_PJ[q].color}">${PERSONAJES[q].emoji} ${PERSONAJES[q].nombre} <span class="jp" style="opacity:.7">${PERSONAJES[q].ja}</span> 🔊</button>`).join('')}
       </div>
       <div class="etiquetas">
-        ${c.paisaje.map(p => `<span class="etq">${PAISAJES[p]}</span>`).join('')}
-        <span class="etq">${ESTACIONES[c.estacion]}</span>
-        ${c.fuji ? '<span class="etq">🗻 Vista del Fuji</span>' : ''}${dist}
+        ${c.paisaje.map(p => `<span class="etq">${tr(PAISAJES[p])}</span>`).join('')}
+        <span class="etq">${tr(ESTACIONES[c.estacion])}</span>
+        ${c.fuji ? `<span class="etq">${tr('🗻 Vista del Fuji')}</span>` : ''}${dist}
       </div>
-      <div class="bloque"><h4>🎬 Por qué van</h4><p>${esc(c.porque)}</p></div>
-      <div class="bloque"><h4>💡 Lo que aprenden</h4><p>${esc(c.leccion)}</p></div>
-      ${c.comida !== '—' ? `<div class="bloque"><h4>🍲 Qué comen</h4><p class="jp">${esc(c.comida)}</p></div>` : ''}
-      <div class="bloque"><h4>🧭 El sitio real</h4><p>${esc(c.real)}</p></div>
-      <div class="bloque" id="f-tiempo"><h4>🌤️ Tiempo ahora allí · 天気</h4><p class="sub">Consultando el tiempo…</p></div>
+      <div class="bloque"><h4>${tr('🎬 Por qué van')}</h4><p>${esc(c.porque)}</p></div>
+      <div class="bloque"><h4>${tr('💡 Lo que aprenden')}</h4><p>${esc(c.leccion)}</p></div>
+      ${c.comida !== '—' ? `<div class="bloque"><h4>${tr('🍲 Qué comen')}</h4><p class="jp">${esc(c.comida)}</p></div>` : ''}
+      <div class="bloque"><h4>${tr('🧭 El sitio real')}</h4><p>${esc(c.real)}</p></div>
+      <div class="bloque" id="f-tiempo"><h4>${tr('🌤️ Tiempo ahora allí')} · 天気</h4><p class="sub">${tr('Consultando el tiempo…')}</p></div>
       <div class="bloque palabra-sitio"><div class="kanji jp">${esc(pk)}</div>
-        <div style="flex:1"><h4>🈁 Palabra de este camping</h4><p><b class="jp">${esc(pkana)}</b> — ${esc(pes)}</p></div>
+        <div style="flex:1"><h4>${tr('🈁 Palabra de este camping')}</h4><p><b class="jp">${esc(pkana)}</b> — ${esc(pes)}</p></div>
         <button class="hablar" data-decir="${esc(pkana)}">🔊</button></div>
-      ${c.fotos.length > 1 ? `<div><h4 style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--suave);margin-bottom:8px">📸 Escenas del anime (${c.fotos.length})</h4>
+      ${c.fotos.length > 1 ? `<div><h4 style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--suave);margin-bottom:8px">${tr('📸 Escenas del anime ({n})', { n: c.fotos.length })}</h4>
         <div id="galeria" class="fino">${c.fotos.map(f => `<img decoding="async" src="${f}" alt="" data-grande loading="lazy">`).join('')}</div></div>`
-        : (c.fotos.length ? '' : '<p class="sub">Sale en la película; el mapa de fans no tiene capturas de este sitio.</p>')}
+        : (c.fotos.length ? '' : `<p class="sub">${tr('Sale en la película; el mapa de fans no tiene capturas de este sitio.')}</p>`)}
       <div class="acciones">
-        <button class="boton grande ${visitados.has(i) ? 'hecho' : ''}" id="f-visto">${visitados.has(i) ? '💮 ¡Sellado! Estuviste aquí' : '📍 Estuve aquí — sellar pasaporte'}</button>
-        <button class="boton grande" id="f-ruta">${ruta.includes(i) ? '✓ En tu ruta (tocar para quitar)' : '➕ Añadir a mi ruta'}</button>
-        <a class="boton" href="https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}" target="_blank" rel="noopener">🗺️ Google Maps</a>
-        <a class="boton" href="https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}" target="_blank" rel="noopener">🚗 Cómo llegar</a>
+        <button class="boton grande ${visitados.has(i) ? 'hecho' : ''}" id="f-visto">${tr(visitados.has(i) ? '💮 ¡Sellado! Estuviste aquí' : '📍 Estuve aquí — sellar pasaporte')}</button>
+        <button class="boton grande" id="f-ruta">${tr(ruta.includes(i) ? '✓ En tu ruta (tocar para quitar)' : '➕ Añadir a mi ruta')}</button>
+        <a class="boton" href="https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}" target="_blank" rel="noopener">${tr('🗺️ Google Maps')}</a>
+        <a class="boton" href="https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}" target="_blank" rel="noopener">${tr('🚗 Cómo llegar')}</a>
       </div>
     </div>`;
   $('#ficha').scrollTop = 0;
   $('#ficha').classList.add('abierta'); document.body.classList.add('ficha-abierta'); abrirCapas(false);
   $('#f-cerrar').onclick = cerrarFicha;
   $('#f-visto').onclick = () => alternarVisita(i);
-  $('#f-ruta').onclick = () => { alternarRuta(i); $('#f-ruta').textContent = ruta.includes(i) ? '✓ En tu ruta (tocar para quitar)' : '➕ Añadir a mi ruta'; };
+  $('#f-ruta').onclick = () => { alternarRuta(i); $('#f-ruta').textContent = tr(ruta.includes(i) ? '✓ En tu ruta (tocar para quitar)' : '➕ Añadir a mi ruta'); };
   pintarTiempo(i);
   const anfitriona = c.quien[Math.floor(Math.random() * c.quien.length)];
   $('#ficha').querySelectorAll('[data-decir]').forEach(b => b.onclick = () => hablar(b.dataset.decir, anfitriona));
@@ -1094,7 +1096,7 @@ async function pintarTiempo(i) {
       t = { datos: await r.json(), hora: Date.now() }; cacheTiempo.set(i, t);
     }
   } catch (e) {
-    if (seleccionado === i) $('#f-tiempo').innerHTML = '<h4>🌤️ Tiempo ahora allí · 天気</h4><p class="sub">No he podido consultar el tiempo (¿sin conexión?).</p>';
+    if (seleccionado === i) $('#f-tiempo').innerHTML = `<h4>${tr('🌤️ Tiempo ahora allí')} · 天気</h4><p class="sub">${tr('No he podido consultar el tiempo (¿sin conexión?).')}</p>`;
     return;
   }
   if (seleccionado !== i) return; // el usuario ya abrió otro camping
@@ -1102,14 +1104,14 @@ async function pintarTiempo(i) {
   // ¿Fuji al amanecer? Nubes bajas y medias a la hora de la salida del sol de mañana
   const amanecer = d.daily.sunrise[1], hIdx = d.hourly.time.findIndex(h => h >= amanecer.slice(0, 13) + ':00');
   const nubes = hIdx >= 0 ? Math.max(d.hourly.cloud_cover_low[hIdx], d.hourly.cloud_cover_mid[hIdx]) : null;
-  const fuji = !c.fuji || nubes === null ? '' : `<div class="fuji-hoy">🗻 Mañana al amanecer (${amanecer.slice(11)}):
-    ${nubes < 25 ? '<b>富士山が見える！</b> Muy probable ver el Fuji' : nubes < 60 ? '<b>見えるかも…</b> Quizá se vea el Fuji' : '<b>見えないかも</b> Difícil: muchas nubes'} · nubes ${nubes} %</div>`;
-  $('#f-tiempo').innerHTML = `<h4>🌤️ Tiempo ahora allí · 天気</h4>
+  const fuji = !c.fuji || nubes === null ? '' : `<div class="fuji-hoy">${tr('🗻 Mañana al amanecer ({h}):', { h: amanecer.slice(11) })}
+    ${nubes < 25 ? '<b>富士山が見える！</b> ' + tr('Muy probable ver el Fuji') : nubes < 60 ? '<b>見えるかも…</b> ' + tr('Quizá se vea el Fuji') : '<b>見えないかも</b> ' + tr('Difícil: muchas nubes')} · ${tr('nubes')} ${nubes} %</div>`;
+  $('#f-tiempo').innerHTML = `<h4>${tr('🌤️ Tiempo ahora allí')} · 天気</h4>
     <div class="tiempo"><div class="grande">${emo}</div><div class="temp">${Math.round(d.current.temperature_2m)} °C</div>
-      <div style="flex:1;min-width:150px"><b class="jp" style="font-size:18px">${kanji}</b> <span class="jp sub">${kana}</span> — ${es}<br>
-      <small class="sub">Esta noche ${Math.round(d.daily.temperature_2m_min[0])} °C · máx. ${Math.round(d.daily.temperature_2m_max[0])} °C · viento ${Math.round(d.current.wind_speed_10m)} km/h</small></div>
+      <div style="flex:1;min-width:150px"><b class="jp" style="font-size:18px">${kanji}</b> <span class="jp sub">${kana}</span> — ${tr(es)}<br>
+      <small class="sub">${tr('Esta noche {min} °C · máx. {max} °C · viento {v} km/h', { min: Math.round(d.daily.temperature_2m_min[0]), max: Math.round(d.daily.temperature_2m_max[0]), v: Math.round(d.current.wind_speed_10m) })}</small></div>
       <button class="hablar" id="f-tiempo-voz">🔊</button></div>${fuji}${window.cieloDeNoche?.(d, c) || ''}
-    ${d.daily.temperature_2m_min[0] <= 0 ? '<div class="fuji-hoy">🥶 <b class="jp">氷点下</b> (ひょうてんか): bajo cero esta noche. Saco de invierno y カイロ.</div>' : ''}`;
+    ${d.daily.temperature_2m_min[0] <= 0 ? `<div class="fuji-hoy">🥶 <b class="jp">氷点下</b> (ひょうてんか): ${tr('bajo cero esta noche. Saco de invierno y カイロ.')}</div>` : ''}`;
   $('#f-tiempo-voz').onclick = () => hablar(`今日は${kanji}、気温は${Math.round(d.current.temperature_2m)}度です`, c.quien[0]);
 }
 function cerrarFicha() {
@@ -1128,7 +1130,7 @@ function alternarVisita(i) {
   if (visitados.has(i)) {
     confeti(['💮', '🏕️', '⛺', '🔥']);
     const r = rangoActual();
-    avisar(r !== rangoAntes ? `🎖️ ¡Nuevo rango: ${r}!` : `💮 Sello de ${CAMPINGS[i].nombre} conseguido`);
+    avisar(r !== rangoAntes ? tr('🎖️ ¡Nuevo rango: {r}!', { r }) : tr('💮 Sello de {nombre} conseguido', { nombre: CAMPINGS[i].nombre }));
   }
   if (seleccionado === i) abrirFicha(i);
   pintarPasaporte();
@@ -1141,18 +1143,18 @@ function pintarPalabras() {
   const enDialogos = seccionPalabras === 'dialogos';
   document.querySelectorAll('#seg-palabras button').forEach(b => b.classList.toggle('activo', b.dataset.s === seccionPalabras));
   $('#cats').style.display = $('#palabras-botones').style.display = enDialogos ? 'none' : '';
-  $('#palabras-titulo').textContent = enDialogos ? '💬 Diálogos de acampada' : '📖 Palabras para acampar';
+  $('#palabras-titulo').textContent = tr(enDialogos ? '💬 Diálogos de acampada' : '📖 Palabras para acampar');
   if (enDialogos) return pintarDialogos();
-  $('#cats').innerHTML = [['todas', '✨ Todas'], ...VOCABULARIO.map(c => [c.id, `${c.emoji} ${c.titulo}`])]
+  $('#cats').innerHTML = [['todas', tr('✨ Todas')], ...VOCABULARIO.map(c => [c.id, `${c.emoji} ${c.titulo}`])]
     .map(([k, v]) => `<button class="chip ${categoria === k ? 'activo' : ''}" data-c="${k}">${v}</button>`).join('');
   document.querySelectorAll('#cats .chip').forEach(b => b.onclick = () => { categoria = b.dataset.c; pintarPalabras(); });
   const lista = TODAS_PALABRAS.filter(p => (categoria === 'todas' || p.cat === categoria) && (!soloEstrella || aprendidas.has(p.w)));
-  $('#palabras-sub').textContent = `${TODAS_PALABRAS.length} palabras y frases · ⭐ ${aprendidas.size} aprendidas · toca 🔊 para oírlas`;
+  $('#palabras-sub').textContent = tr('{n} palabras y frases · ⭐ {a} aprendidas · toca 🔊 para oírlas', { n: TODAS_PALABRAS.length, a: aprendidas.size });
   const hoy = TODAS_PALABRAS[Math.floor(Date.now() / 864e5) % TODAS_PALABRAS.length];
   $('#palabras').innerHTML = `
-    <div class="del-dia"><div class="kanji jp">${esc(hoy.w)}</div><div style="flex:1"><h4 style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--suave)">☀️ Palabra del día</h4>
+    <div class="del-dia"><div class="kanji jp">${esc(hoy.w)}</div><div style="flex:1"><h4 style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--suave)">${tr('☀️ Palabra del día')}</h4>
       <p><b class="jp">${esc(hoy.kana)}</b> · <i>${esc(hoy.romaji)}</i> — ${esc(hoy.es)} ${hoy.emoji}</p></div><button class="hablar" data-decir="${esc(hoy.w)}" data-quien="${vozPalabra(hoy.cat)}">🔊</button></div>
-    ${lista.length ? '' : '<div class="vacia">Todavía no has marcado ninguna con ⭐</div>'}
+    ${lista.length ? '' : `<div class="vacia">${tr('Todavía no has marcado ninguna con ⭐')}</div>`}
     <div class="rejilla">${lista.slice(0, PRIMERAS).map(tarjetaPalabra).join('')}</div>`;
   // El resto de tarjetas se pinta cuando ya terminó la animación de la hoja: así abre sin tirones
   clearTimeout(pintarPalabras.resto);
@@ -1162,9 +1164,9 @@ const PRIMERAS = 24;
 function tarjetaPalabra(p) {
   return `
       <div class="tarjeta ${ocultar ? 'oculta' : ''}" data-w="${esc(p.w)}" data-quien="${vozPalabra(p.cat)}">
-        <button class="altavoz" data-decir="${esc(p.w)}" data-quien="${vozPalabra(p.cat)}" title="Escuchar">🔊</button>
-        <span class="quien-dice" style="background:${FICHAS_PJ[vozPalabra(p.cat)].color}" title="La dice ${PERSONAJES[vozPalabra(p.cat)].nombre}">${PERSONAJES[vozPalabra(p.cat)].emoji}</span>
-        <button class="estrella ${aprendidas.has(p.w) ? 'si' : ''}" data-e="${esc(p.w)}" title="Marcar como aprendida">${aprendidas.has(p.w) ? '⭐' : '☆'}</button>
+        <button class="altavoz" data-decir="${esc(p.w)}" data-quien="${vozPalabra(p.cat)}" title="${tr('Escuchar')}">🔊</button>
+        <span class="quien-dice" style="background:${FICHAS_PJ[vozPalabra(p.cat)].color}" title="${tr('La dice {n}', { n: PERSONAJES[vozPalabra(p.cat)].nombre })}">${PERSONAJES[vozPalabra(p.cat)].emoji}</span>
+        <button class="estrella ${aprendidas.has(p.w) ? 'si' : ''}" data-e="${esc(p.w)}" title="${tr('Marcar como aprendida')}">${aprendidas.has(p.w) ? '⭐' : '☆'}</button>
         <div class="emo">${p.emoji}</div>
         <div class="escritura jp">${esc(p.w)}</div>
         ${p.kana !== p.w ? `<div class="lectura jp">${esc(p.kana)}</div>` : ''}
@@ -1180,10 +1182,10 @@ $('#palabras').addEventListener('click', e => {
   if (estrella) {
     const w = estrella.dataset.e, ahora = !aprendidas.has(w);
     ahora ? aprendidas.add(w) : aprendidas.delete(w);
-    if (ahora && aprendidas.size % 10 === 0) { confeti(['⭐', '🈁', '🎌']); avisar(`⭐ ¡${aprendidas.size} palabras aprendidas!`); }
+    if (ahora && aprendidas.size % 10 === 0) { confeti(['⭐', '🈁', '🎌']); avisar(tr('⭐ ¡{n} palabras aprendidas!', { n: aprendidas.size })); }
     guardado.escribir('aprendidas', [...aprendidas]);
     estrella.classList.toggle('si', ahora); estrella.textContent = ahora ? '⭐' : '☆';
-    $('#palabras-sub').textContent = `${TODAS_PALABRAS.length} palabras y frases · ⭐ ${aprendidas.size} aprendidas · toca 🔊 para oírlas`;
+    $('#palabras-sub').textContent = tr('{n} palabras y frases · ⭐ {a} aprendidas · toca 🔊 para oírlas', { n: TODAS_PALABRAS.length, a: aprendidas.size });
     return;
   }
   if (tarjeta) { tarjeta.classList.toggle('oculta'); if (!tarjeta.classList.contains('oculta')) hablar(tarjeta.dataset.w, tarjeta.dataset.quien); }
@@ -1197,26 +1199,26 @@ const hablanteDe = q => PERSONAJES[q] || VOCES_EXTRA[q];
 function caraDe(q) { const h = hablanteDe(q); return `<div class="avatar" style="background:${VOZ_DE(q).color}">${h.emoji}</div>`; }
 function pintarDialogos() {
   if (!escena) {
-    $('#palabras-sub').textContent = `${DIALOGOS.length} escenas con voz · escucha, repite y haz tú un papel`;
+    $('#palabras-sub').textContent = tr('{n} escenas con voz · escucha, repite y haz tú un papel', { n: DIALOGOS.length });
     $('#palabras').innerHTML = `<div class="escenas">${DIALOGOS.map(d => {
       const quienes = [...new Set(d.lineas.map(l => l[0]))];
       return `<button class="escena" data-d="${d.id}"><div class="emo">${d.emoji}</div><b>${esc(d.titulo)}</b>
-        <span class="jp sub">${esc(d.ja)} · ${d.lineas.length} frases</span><div class="caras">${quienes.map(caraDe).join('')}</div></button>`;
+        <span class="jp sub">${esc(d.ja)} · ${tr('{n} frases', { n: d.lineas.length })}</span><div class="caras">${quienes.map(caraDe).join('')}</div></button>`;
     }).join('')}</div>`;
     $('#palabras').querySelectorAll('[data-d]').forEach(b => b.onclick = () => { escena = DIALOGOS.find(d => d.id === b.dataset.d); miPapel = null; pintarDialogos(); });
     return;
   }
   const quienes = [...new Set(escena.lineas.map(l => l[0]))];
-  $('#palabras-sub').textContent = `${escena.emoji} ${escena.titulo} · toca una frase para oírla`;
+  $('#palabras-sub').textContent = `${escena.emoji} ${escena.titulo} · ${tr('toca una frase para oírla')}`;
   $('#palabras').innerHTML = `
     <div class="controles">
-      <button class="chip" id="d-volver">↩︎ Escenas</button>
-      <button class="chip" id="d-play">▶︎ Escuchar la escena</button>
-      <button class="chip ${sinEspanol ? 'activo' : ''}" id="d-es">🙈 Ocultar español</button>
-      <span class="sub" style="margin-left:4px">🎭 Hazlo tú:</span>
+      <button class="chip" id="d-volver">${tr('↩︎ Escenas')}</button>
+      <button class="chip" id="d-play">${tr('▶︎ Escuchar la escena')}</button>
+      <button class="chip ${sinEspanol ? 'activo' : ''}" id="d-es">${tr('🙈 Ocultar español')}</button>
+      <span class="sub" style="margin-left:4px">${tr('🎭 Hazlo tú:')}</span>
       ${quienes.map(q => `<button class="chip ${miPapel === q ? 'activo' : ''}" data-papel="${q}">${hablanteDe(q).emoji} ${esc(hablanteDe(q).nombre)}</button>`).join('')}
     </div>
-    ${miPapel ? `<p class="sub" style="margin-bottom:10px">🎤 Eres ${esc(hablanteDe(miPapel).nombre)}: tus frases salen tapadas y te toca decirlas en voz alta. Después se destapan y la oyes.</p>` : ''}
+    ${miPapel ? `<p class="sub" style="margin-bottom:10px">${tr('🎤 Eres {n}: tus frases salen tapadas y te toca decirlas en voz alta. Después se destapan y la oyes.', { n: esc(hablanteDe(miPapel).nombre) })}</p>` : ''}
     <div class="chat ${sinEspanol ? 'sin-es' : ''}">${escena.lineas.map(([q, ja, kana, es], i) => `
       <div class="linea ${q === quienes[0] ? '' : 'dcha'} ${miPapel === q ? 'tapada' : ''}" data-l="${i}">${caraDe(q)}
         <div class="globo"><div class="n">${esc(hablanteDe(q).nombre)}</div><div class="j jp">${esc(ja)}</div>
@@ -1230,10 +1232,10 @@ function pintarDialogos() {
     el.classList.remove('tapada'); Voz.decir(ja, q, { traduccion: es });
   });
 }
-function pararEscena() { turnoEscena = 0; Voz.parar(); const b = $('#d-play'); if (b) b.textContent = '▶︎ Escuchar la escena'; }
+function pararEscena() { turnoEscena = 0; Voz.parar(); const b = $('#d-play'); if (b) b.textContent = tr('▶︎ Escuchar la escena'); }
 async function reproducirEscena() {
   const yo = turnoEscena = Date.now(); // si cambia, alguien paró la escena
-  $('#d-play').textContent = '⏹ Parar';
+  $('#d-play').textContent = tr('⏹ Parar');
   const filas = [...document.querySelectorAll('.linea')];
   for (let i = 0; i < escena.lineas.length && turnoEscena === yo; i++) {
     const [q, ja, , es] = escena.lineas[i], fila = filas[i];
@@ -1250,7 +1252,7 @@ async function reproducirEscena() {
     fila.classList.remove('sonando');
     await new Promise(ok => setTimeout(ok, 350));
   }
-  if (turnoEscena === yo) { pararEscena(); if (miPapel) { confeti(['🎭', '⭐', '💬']); avisar('🎭 ¡Escena completa! Otra vez sin mirar el español'); } }
+  if (turnoEscena === yo) { pararEscena(); if (miPapel) { confeti(['🎭', '⭐', '💬']); avisar(tr('🎭 ¡Escena completa! Otra vez sin mirar el español')); } }
 }
 
 /* ================= Quiz ================= */
@@ -1264,15 +1266,16 @@ const MODOS = {
   frase:   { emoji: '🗣️', titulo: '¿Quién lo diría?', desc: 'Lee la frase y adivina qué personaje habla así' },
   contesta: { emoji: '💬', titulo: '¿Qué contestas?', desc: 'Te hablan en el camping o en la tienda: elige la respuesta' },
 };
+for (const m of Object.values(MODOS)) { m.titulo = tr(m.titulo); m.desc = tr(m.desc); }
 let partida = null;
 const record = guardado.leer('records', {});
 function pintarMenuQuiz() {
   partida = null;
-  $('#quiz-sub').textContent = 'Elige un juego · 10 preguntas cada uno';
+  $('#quiz-sub').textContent = tr('Elige un juego · 10 preguntas cada uno');
   $('#marcador').innerHTML = '';
   $('#quiz').innerHTML = `<div class="modos">${Object.entries(MODOS).map(([k, m]) => `
     <button class="modo" data-m="${k}"><div class="emo">${m.emoji}</div><b>${m.titulo}</b><small>${m.desc}</small>
-    ${record[k] != null ? `<div class="sub" style="margin-top:8px">🏆 Récord: ${record[k]}/10</div>` : ''}</button>`).join('')}</div>`;
+    ${record[k] != null ? `<div class="sub" style="margin-top:8px">${tr('🏆 Récord: {n}/10', { n: record[k] })}</div>` : ''}</button>`).join('')}</div>`;
   document.querySelectorAll('.modo').forEach(b => b.onclick = () => empezarQuiz(b.dataset.m));
 }
 function preguntaDe(modo) {
@@ -1285,13 +1288,13 @@ function preguntaDe(modo) {
     const ops = distintas(bien, fuente, p => p.es);
     const q = vozPalabra(bien.cat);
     if (modo === 'es_ja') return { quien: q, enunciado: `<div class="grande" style="font-size:34px">${bien.emoji} ${esc(bien.es)}</div>`, ops: ops.map(p => ({ txt: `<span class="jp">${esc(p.w)}</span>`, ok: p === bien })), decir: bien.w, explica: `${bien.w} · ${bien.kana} · ${bien.romaji}` };
-    if (modo === 'oido') return { quien: q, enunciado: `<button class="boton" data-repetir style="font-size:20px;padding:22px 34px">🔊 Escuchar otra vez</button>`, alEmpezar: () => hablar(bien.w, q), ops: ops.map(p => ({ txt: esc(p.es), ok: p === bien })), decir: bien.w, explica: `${bien.w} · ${bien.romaji}` };
+    if (modo === 'oido') return { quien: q, enunciado: `<button class="boton" data-repetir style="font-size:20px;padding:22px 34px">${tr('🔊 Escuchar otra vez')}</button>`, alEmpezar: () => hablar(bien.w, q), ops: ops.map(p => ({ txt: esc(p.es), ok: p === bien })), decir: bien.w, explica: `${bien.w} · ${bien.romaji}` };
     return { quien: q, enunciado: `<div class="grande jp">${esc(bien.w)}</div><div class="sub jp" style="font-size:16px">${bien.kana !== bien.w ? esc(bien.kana) : ''}</div>`, ops: ops.map(p => ({ txt: esc(p.es), ok: p === bien })), decir: bien.w, explica: `${bien.romaji} — ${bien.es}` };
   }
   if (modo === 'camping') {
     const bien = conFoto[Math.floor(Math.random() * conFoto.length)];
     const foto = bien.fotos[Math.floor(Math.random() * bien.fotos.length)];
-    return { enunciado: `<img decoding="async" src="${foto}" alt="Captura del anime">`, ops: distintas(bien, conFoto, c => c.nombre).map(c => ({ txt: esc(c.nombre), ok: c === bien })), explica: `${bien.nombre} · ${bien.ja} · ${bien.ep}`, decir: bien.kana, quien: bien.quien[0] };
+    return { enunciado: `<img decoding="async" src="${foto}" alt="">`, ops: distintas(bien, conFoto, c => c.nombre).map(c => ({ txt: esc(c.nombre), ok: c === bien })), explica: `${bien.nombre} · ${bien.ja} · ${bien.ep}`, decir: bien.kana, quien: bien.quien[0] };
   }
   if (modo === 'kanji') {
     const conKanji = CAMPINGS.filter(c => /[一-龯]/.test(c.ja));
@@ -1305,7 +1308,7 @@ function preguntaDe(modo) {
     const otras = baraja(DIALOGOS.filter(x => x !== d).flatMap(x => x.lineas)).filter((l, j, a) => a.findIndex(y => y[1] === l[1]) === j).slice(0, 3);
     return { enunciado: `<div class="sub">${d.emoji} ${esc(d.titulo)}</div><div style="display:flex;gap:10px;align-items:center;justify-content:center;margin-top:10px">${caraDe(qa)}
         <div style="text-align:left"><div class="jp" style="font-size:24px;font-weight:800">${esc(jaA)}</div><div class="sub">${esc(esA)}</div></div></div>
-        <button class="chip" data-repetir style="margin-top:10px">🔊 Otra vez</button>`,
+        <button class="chip" data-repetir style="margin-top:10px">${tr('🔊 Otra vez')}</button>`,
       alEmpezar: () => Voz.decir(jaA, qa, { traduccion: esA }),
       ops: baraja([bien, ...otras]).map(l => ({ txt: `<span class="jp">${esc(l[1])}</span>`, ok: l === bien })),
       explica: `${bien[1]} — ${bien[3]}`, decir: bien[1], quien: bien[0] };
@@ -1317,7 +1320,7 @@ function preguntaDe(modo) {
     const otras = baraja(Object.keys(FICHAS_PJ).filter(q => q !== quien)).slice(0, 3);
     return { enunciado: `<div class="grande jp" style="font-size:34px">「${esc(ja)}」</div><div class="sub" style="font-size:16px;margin-top:8px">${esc(es)}</div>`,
       ops: baraja([quien, ...otras]).map(q => ({ txt: `${PERSONAJES[q].emoji} ${PERSONAJES[q].nombre}`, ok: q === quien })),
-      explica: `Lo dice ${PERSONAJES[quien].nombre}: ${FICHAS_PJ[quien].rasgo}`, decir: ja, quien };
+      explica: `${tr('Lo dice {n}', { n: PERSONAJES[quien].nombre })}: ${FICHAS_PJ[quien].rasgo}`, decir: ja, quien };
   }
   // quien: un personaje que sí acampa ahí y tres que no
   const bien = CAMPINGS[Math.floor(Math.random() * CAMPINGS.length)];
@@ -1325,8 +1328,8 @@ function preguntaDe(modo) {
   const no = baraja(Object.keys(PERSONAJES).filter(p => !bien.quien.includes(p))).slice(0, 3);
   if (no.length < 3) return preguntaDe(modo);
   const foto = bien.fotos[0] ? `<img decoding="async" src="${bien.fotos[0]}" alt="" style="max-height:200px"><br>` : '';
-  return { enunciado: `${foto}<div style="font-size:24px;font-weight:800;margin-top:10px">${esc(bien.nombre)}</div><div class="sub">${esc(bien.ep)} · ¿quién está en esta acampada?</div>`,
-    ops: baraja([si, ...no]).map(p => ({ txt: `${PERSONAJES[p].emoji} ${PERSONAJES[p].nombre}`, ok: p === si })), explica: `Acampan: ${bien.quien.map(q => PERSONAJES[q].nombre).join(', ')}` };
+  return { enunciado: `${foto}<div style="font-size:24px;font-weight:800;margin-top:10px">${esc(bien.nombre)}</div><div class="sub">${esc(bien.ep)} · ${tr('¿quién está en esta acampada?')}</div>`,
+    ops: baraja([si, ...no]).map(p => ({ txt: `${PERSONAJES[p].emoji} ${PERSONAJES[p].nombre}`, ok: p === si })), explica: `${tr('Acampan')}: ${bien.quien.map(q => PERSONAJES[q].nombre).join(', ')}` };
 }
 function empezarQuiz(modo) { partida = { modo, n: 0, puntos: 0, racha: 0 }; siguientePregunta(); }
 function siguientePregunta() {
@@ -1335,11 +1338,11 @@ function siguientePregunta() {
   p.n++;
   const q = preguntaDe(p.modo);
   $('#quiz-sub').textContent = `${MODOS[p.modo].emoji} ${MODOS[p.modo].titulo}`;
-  $('#marcador').innerHTML = `<span>Pregunta <b>${p.n}/10</b></span><span>Aciertos <b>${p.puntos}</b></span><span>🔥 <b>${p.racha}</b></span>`;
+  $('#marcador').innerHTML = `<span>${tr('Pregunta')} <b>${p.n}/10</b></span><span>${tr('Aciertos')} <b>${p.puntos}</b></span><span>🔥 <b>${p.racha}</b></span>`;
   $('#quiz').innerHTML = `<div class="pregunta">${q.enunciado}</div>
     <div class="opciones">${q.ops.map((o, i) => `<button class="opcion" data-i="${i}">${o.txt}</button>`).join('')}</div>
     <div class="explica" id="explica"></div>
-    <div style="text-align:center;margin-top:14px"><button class="chip" id="salir">↩︎ Volver a los juegos</button></div>`;
+    <div style="text-align:center;margin-top:14px"><button class="chip" id="salir">${tr('↩︎ Volver a los juegos')}</button></div>`;
   $('#salir').onclick = pintarMenuQuiz;
   const rep = $('#quiz [data-repetir]'); if (rep) rep.onclick = q.alEmpezar;
   if (q.alEmpezar) setTimeout(q.alEmpezar, 250);
@@ -1351,9 +1354,9 @@ function siguientePregunta() {
     q.alResponder?.(ok);
     if (ok) { p.puntos++; p.racha++; if (p.racha % 3 === 0) confeti(['🔥', '⭐']); }
     else { b.classList.add('mal'); p.racha = 0; }
-    $('#explica').innerHTML = `${ok ? '✅ ¡Bien!' : '❌ Casi.'} <span class="jp">${esc(q.explica)}</span>`;
+    $('#explica').innerHTML = `${tr(ok ? '✅ ¡Bien!' : '❌ Casi.')} <span class="jp">${esc(q.explica)}</span>`;
     if (q.decir) hablar(q.decir, q.quien);
-    $('#marcador').innerHTML = `<span>Pregunta <b>${p.n}/10</b></span><span>Aciertos <b>${p.puntos}</b></span><span>🔥 <b>${p.racha}</b></span>`;
+    $('#marcador').innerHTML = `<span>${tr('Pregunta')} <b>${p.n}/10</b></span><span>${tr('Aciertos')} <b>${p.puntos}</b></span><span>🔥 <b>${p.racha}</b></span>`;
     setTimeout(siguientePregunta, ok ? 1500 : 2600);
   });
 }
@@ -1361,13 +1364,13 @@ function finQuiz() {
   const p = partida, antes = record[p.modo];
   const nuevo = antes == null || p.puntos > antes;
   if (nuevo) { record[p.modo] = p.puntos; guardado.escribir('records', record); }
-  const frase = p.puntos === 10 ? '👑 ¡Perfecto! Rin estaría orgullosa' : p.puntos >= 7 ? '🏕️ ¡Muy bien, campista!' : p.puntos >= 4 ? '🔥 Vas encendiendo la hoguera' : '🍜 Tómate unos カレーめん y otra vez';
+  const frase = tr(p.puntos === 10 ? '👑 ¡Perfecto! Rin estaría orgullosa' : p.puntos >= 7 ? '🏕️ ¡Muy bien, campista!' : p.puntos >= 4 ? '🔥 Vas encendiendo la hoguera' : '🍜 Tómate unos カレーめん y otra vez');
   if (p.puntos >= 7) confeti();
   // Al acabar, alguien del grupo comenta el resultado
   setTimeout(() => Voz.reaccionar(baraja(Object.keys(FICHAS_PJ))[0], p.puntos >= 6 ? 'bien' : 'mal'), 300);
   $('#quiz').innerHTML = `<div class="pregunta"><div class="grande">${p.puntos}/10</div><p style="font-size:20px;margin-top:10px">${frase}</p>
-    ${nuevo ? '<p class="sub" style="margin-top:6px">🏆 ¡Nuevo récord!</p>' : `<p class="sub">Récord: ${antes}/10</p>`}</div>
-    <div class="opciones"><button class="opcion" id="otra">🔁 Otra ronda</button><button class="opcion" id="menu">🎯 Otros juegos</button></div>`;
+    ${nuevo ? `<p class="sub" style="margin-top:6px">${tr('🏆 ¡Nuevo récord!')}</p>` : `<p class="sub">${tr('Récord: {n}/10', { n: antes })}</p>`}</div>
+    <div class="opciones"><button class="opcion" id="otra">${tr('🔁 Otra ronda')}</button><button class="opcion" id="menu">${tr('🎯 Otros juegos')}</button></div>`;
   $('#otra').onclick = () => empezarQuiz(p.modo); $('#menu').onclick = pintarMenuQuiz;
 }
 
@@ -1385,7 +1388,7 @@ function alternarRuta(i) {
   const k = ruta.indexOf(i);
   k >= 0 ? ruta.splice(k, 1) : ruta.push(i);
   guardarRuta();
-  avisar(k >= 0 ? `Quitado de tu ruta: ${CAMPINGS[i].nombre}` : `🧭 Añadido a tu ruta (${ruta.length} paradas)`);
+  avisar(k >= 0 ? tr('Quitado de tu ruta: {n}', { n: CAMPINGS[i].nombre }) : tr('🧭 Añadido a tu ruta ({n} paradas)', { n: ruta.length }));
 }
 const puntoDe = i => [CAMPINGS[i].lat, CAMPINGS[i].lng];
 function largoRuta(orden, inicio) {
@@ -1425,40 +1428,40 @@ function enlacesMaps() {
   return tramos.map((t, n) => {
     const pts = t.map(i => `${CAMPINGS[i].lat},${CAMPINGS[i].lng}`);
     const url = `https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=${pts[0]}&destination=${pts.at(-1)}` + (pts.length > 2 ? `&waypoints=${encodeURIComponent(pts.slice(1, -1).join('|'))}` : '');
-    return `<a class="boton" href="${url}" target="_blank" rel="noopener">🚗 ${tramos.length > 1 ? `Tramo ${n + 1}: ` : 'Abrir en Google Maps: '}${esc(CAMPINGS[t[0]].nombre)} → ${esc(CAMPINGS[t.at(-1)].nombre)}</a>`;
+    return `<a class="boton" href="${url}" target="_blank" rel="noopener">🚗 ${tramos.length > 1 ? tr('Tramo {n}: ', { n: n + 1 }) : tr('Abrir en Google Maps: ')}${esc(CAMPINGS[t[0]].nombre)} → ${esc(CAMPINGS[t.at(-1)].nombre)}</a>`;
   }).join('');
 }
 function pintarRuta() {
   $('#mochila-progreso').style.display = 'none';
   const total = largoRuta(ruta, null), carretera = total * 1.35;
-  $('#mochila-sub').textContent = ruta.length ? `${ruta.length} paradas · añade más desde la ficha de cada camping` : 'Elige una ruta del anime o añade campings desde su ficha';
+  $('#mochila-sub').textContent = ruta.length ? tr('{n} paradas · añade más desde la ficha de cada camping', { n: ruta.length }) : tr('Elige una ruta del anime o añade campings desde su ficha');
   $('#mochila').innerHTML = `
-    <div class="presets">${PRESETS.map(([t], n) => `<button class="chip" data-preset="${n}">${t}</button>`).join('')}</div>
+    <div class="presets">${PRESETS.map(([t], n) => `<button class="chip" data-preset="${n}">${tr(t)}</button>`).join('')}</div>
     ${ruta.length ? `
       <div class="resumen">
-        <div class="dato"><b>${ruta.length}</b><small>paradas</small></div>
-        <div class="dato"><b>≈${Math.round(carretera)} km</b><small>por carretera (estimado)</small></div>
-        <div class="dato"><b>≈${Math.max(1, Math.round(carretera / 45))} h</b><small>al volante, sin paradas</small></div>
+        <div class="dato"><b>${ruta.length}</b><small>${tr('paradas')}</small></div>
+        <div class="dato"><b>≈${Math.round(carretera)} km</b><small>${tr('por carretera (estimado)')}</small></div>
+        <div class="dato"><b>≈${Math.max(1, Math.round(carretera / 45))} h</b><small>${tr('al volante, sin paradas')}</small></div>
       </div>
-      <div class="controles"><button class="chip" id="r-ordenar">🔀 Ordenar por el camino más corto${miPosicion ? ' desde aquí' : ''}</button>
-        <button class="chip" id="r-mapa">🗺️ Verla en el mapa</button></div>
+      <div class="controles"><button class="chip" id="r-ordenar">${tr(miPosicion ? '🔀 Ordenar por el camino más corto desde aquí' : '🔀 Ordenar por el camino más corto')}</button>
+        <button class="chip" id="r-mapa">${tr('🗺️ Verla en el mapa')}</button></div>
       <div>${ruta.map((i, n) => {
         const c = CAMPINGS[i], sig = ruta[n + 1];
         return `<div class="parada"><div class="num" style="background:${COLORES[c.temporada]}">${n + 1}</div>
           <div class="txt"><b>${esc(c.nombre)} ${visitados.has(i) ? '💮' : ''}</b><small class="jp">${esc(c.ja)} · ${esc(c.ep)}</small></div>
-          <button data-sube="${n}" ${n ? '' : 'disabled style="opacity:.3"'} aria-label="Subir">↑</button><button data-quita="${n}" aria-label="Quitar">✕</button></div>
-          ${sig !== undefined ? `<div class="tramo">↓ ${Math.round(km(puntoDe(i), puntoDe(sig)) * 1.35)} km aprox.</div>` : ''}`;
+          <button data-sube="${n}" ${n ? '' : 'disabled style="opacity:.3"'} aria-label="${tr('Subir')}">↑</button><button data-quita="${n}" aria-label="${tr('Quitar')}">✕</button></div>
+          ${sig !== undefined ? `<div class="tramo">↓ ${tr('{n} km aprox.', { n: Math.round(km(puntoDe(i), puntoDe(sig)) * 1.35) })}</div>` : ''}`;
       }).join('')}</div>
       ${ruta.length > 1 ? `<div class="enlaces">${enlacesMaps()}</div>` : ''}
-      <p class="sub" style="margin-top:12px">Los km salen de la distancia en línea recta × 1,35. Google Maps te dará el tiempo real, peajes incluidos.</p>`
-    : '<div class="vacia">🧭 Aún no hay paradas.<br>Pulsa una ruta de arriba o «➕ Añadir a mi ruta» en un camping.</div>'}`;
+      <p class="sub" style="margin-top:12px">${tr('Los km salen de la distancia en línea recta × 1,35. Google Maps te dará el tiempo real, peajes incluidos.')}</p>`
+    : `<div class="vacia">${tr('🧭 Aún no hay paradas.')}<br>${tr('Pulsa una ruta de arriba o «➕ Añadir a mi ruta» en un camping.')}</div>`}`;
   $('#mochila').querySelectorAll('[data-preset]').forEach(b => b.onclick = () => {
     ruta.splice(0, ruta.length, ...PRESETS[+b.dataset.preset][1]()); ordenarRuta(); guardarRuta(); pintarRuta();
     Voz.reaccionar(b.dataset.preset === '1' ? 'nadeshiko' : b.dataset.preset === '0' ? 'rin' : 'chiaki', 'hola');
   });
   $('#mochila').querySelectorAll('[data-quita]').forEach(b => b.onclick = () => { ruta.splice(+b.dataset.quita, 1); guardarRuta(); pintarRuta(); });
   $('#mochila').querySelectorAll('[data-sube]').forEach(b => b.onclick = () => { const n = +b.dataset.sube; [ruta[n - 1], ruta[n]] = [ruta[n], ruta[n - 1]]; guardarRuta(); pintarRuta(); });
-  const ord = $('#r-ordenar'); if (ord) ord.onclick = () => { ordenarRuta(); pintarRuta(); avisar('🔀 Ruta ordenada'); };
+  const ord = $('#r-ordenar'); if (ord) ord.onclick = () => { ordenarRuta(); pintarRuta(); avisar(tr('🔀 Ruta ordenada')); };
   const ver = $('#r-mapa'); if (ver) ver.onclick = () => { irA('mapa'); mapa.flyToBounds(ruta.map(puntoDe), { padding: [50, 50], paddingBottomRight: [50, esMovil() ? 300 : 120], maxZoom: 12, duration: .8 }); };
 }
 $('#vaciar').onclick = () => {
@@ -1469,14 +1472,14 @@ $('#vaciar').onclick = () => {
 /* ================= Mochila ================= */
 function pintarMochila() {
   document.querySelectorAll('#seg-viaje button').forEach(b => b.classList.toggle('activo', b.dataset.s === seccionViaje));
-  $('#viaje-titulo').textContent = seccionViaje === 'ruta' ? '🧭 Mi ruta 聖地巡礼' : '🎒 Mochila de campista';
+  $('#viaje-titulo').textContent = tr(seccionViaje === 'ruta' ? '🧭 Mi ruta 聖地巡礼' : '🎒 Mochila de campista');
   if (seccionViaje === 'ruta') return pintarRuta();
   $('#mochila-progreso').style.display = '';
   const total = MOCHILA.reduce((n, s) => n + s.cosas.length, 0);
   const hechas = MOCHILA.flatMap(s => s.cosas.map(c => c[0])).filter(w => mochila.has(w)).length;
-  $('#mochila-sub').textContent = hechas === total ? '✅ ¡Todo listo! Rin aprobaría esta mochila' : `${hechas} de ${total} cosas · toca cada una al meterla (y oye cómo se dice)`;
+  $('#mochila-sub').textContent = hechas === total ? tr('✅ ¡Todo listo! Rin aprobaría esta mochila') : tr('{n} de {total} cosas · toca cada una al meterla (y oye cómo se dice)', { n: hechas, total });
   $('#mochila-barra').style.width = (hechas / total * 100) + '%';
-  $('#mochila').innerHTML = MOCHILA.map(s => `<div class="seccion-mochila"><h3>${s.titulo} <small class="sub">· te lo dice ${PERSONAJES[s.voz].emoji} ${PERSONAJES[s.voz].nombre}</small></h3>${s.cosas.map(([w, es]) =>
+  $('#mochila').innerHTML = MOCHILA.map(s => `<div class="seccion-mochila"><h3>${s.titulo} <small class="sub">· ${tr('te lo dice')} ${PERSONAJES[s.voz].emoji} ${PERSONAJES[s.voz].nombre}</small></h3>${s.cosas.map(([w, es]) =>
     `<div class="check ${mochila.has(w) ? 'si' : ''}" data-w="${esc(w)}" data-quien="${s.voz}"><div class="caja">${mochila.has(w) ? '✓' : ''}</div>
       <div class="txt"><span class="jpn jp">${esc(w)}</span> <small>· ${esc(es)}</small></div></div>`).join('')}</div>`).join('');
   document.querySelectorAll('.check').forEach(el => el.onclick = () => {
@@ -1484,7 +1487,7 @@ function pintarMochila() {
     estaba ? mochila.delete(w) : (mochila.add(w), hablar(w, el.dataset.quien));
     guardado.escribir('mochila', [...mochila]);
     pintarMochila();
-    if (!estaba && mochila.size === total) { confeti(['🎒', '⛺', '✅']); avisar('🎒 ¡Mochila completa! A la montaña'); }
+    if (!estaba && mochila.size === total) { confeti(['🎒', '⛺', '✅']); avisar(tr('🎒 ¡Mochila completa! A la montaña')); }
   });
 }
 
@@ -1493,16 +1496,16 @@ function rangoActual() { return RANGOS.filter(([n]) => visitados.size >= n).pop(
 function pintarPasaporte() {
   const sig = RANGOS.find(([n]) => n > visitados.size);
   $('#rango').textContent = rangoActual();
-  $('#pasaporte-sub').textContent = `${visitados.size} de ${CAMPINGS.length} sellos` + (sig ? ` · te faltan ${sig[0] - visitados.size} para «${sig[1]}»` : ' · ¡los tienes todos!');
+  $('#pasaporte-sub').textContent = tr('{n} de {total} sellos', { n: visitados.size, total: CAMPINGS.length }) + ' · ' + (sig ? tr('te faltan {n} para «{r}»', { n: sig[0] - visitados.size, r: sig[1] }) : tr('¡los tienes todos!'));
   $('#pasaporte-barra').style.width = (visitados.size / CAMPINGS.length * 100) + '%';
   $('#sellos').innerHTML = CAMPINGS.map((c, i) => `<div class="sello ${visitados.has(i) ? 'si' : ''}" data-i="${i}">
     <div class="hanko jp">${esc([...c.ja.replace(/キャンプ場|キャンプサイト|キャンプ/g, '')][0])}</div>
     <b>${esc(c.nombre)}</b><small>${esc(c.ep)}</small></div>`).join('');
   document.querySelectorAll('.sello').forEach(s => s.onclick = () => { irA('mapa'); abrirFicha(+s.dataset.i); });
-  $('#sellos-lugar').innerHTML = `<h3 style="font-size:15px;margin:22px 0 10px">📍 Lugares del anime visitados · ${lugaresVistos.size} de ${LUGARES.length}</h3>
+  $('#sellos-lugar').innerHTML = `<h3 style="font-size:15px;margin:22px 0 10px">${tr('📍 Lugares del anime visitados · {n} de {total}', { n: lugaresVistos.size, total: LUGARES.length })}</h3>
     <div class="sellos">${Object.entries(CATEGORIAS_LUGAR).map(([c, d]) => {
       const todos = LUGARES.map((l, i) => i).filter(i => LUGARES[i].c === c), hechos = todos.filter(i => lugaresVistos.has(i)).length;
-      return `<div class="sello ${hechos ? 'si' : ''}" data-capa="${c}"><div class="hanko" style="font-size:34px">${d.emoji}</div><b>${esc(d.titulo)}</b><small>${hechos} de ${todos.length}</small></div>`;
+      return `<div class="sello ${hechos ? 'si' : ''}" data-capa="${c}"><div class="hanko" style="font-size:34px">${d.emoji}</div><b>${esc(d.titulo)}</b><small>${tr('{n} de {total}', { n: hechos, total: todos.length })}</small></div>`;
     }).join('')}</div>`;
   $('#sellos-lugar').querySelectorAll('[data-capa]').forEach(s => s.onclick = () => { capasLugar.add(s.dataset.capa); guardado.escribir('capasLugar', [...capasLugar]); ponerCapasLugar(); pintarCapasLugar(); irA('mapa'); });
 }
@@ -1518,13 +1521,13 @@ async function pintarPersonajes() {
   const opcionesVoz = Object.entries(Voz.estado.listas).flatMap(([m, lista]) => lista.map(v => [`${m}:${v.id}`, `${m === 'aivis' ? 'Aivis' : 'VOICEVOX'} · ${v.nombre} (${v.estilo})`]));
   $('#personajes').innerHTML = `
     <div class="motor"><div style="flex:1;min-width:220px"><b><span class="luz ${vv || grabadas ? 'si' : ''}"></span>${
-        Voz.estado.listas.aivis ? 'AivisSpeech conectado: voces naturales' : vv ? 'VOICEVOX conectado' : grabadas ? 'Voces grabadas en alta calidad' : 'Voz del sistema'}</b><br>
-      <span class="sub">${grabadas ? `${grabadas} frases y palabras ya grabadas con la voz de cada chica: suenan igual en el móvil y sin conexión al motor.` : ''}
-        ${vv ? 'Lo nuevo se sintetiza al momento. Puedes cambiar la voz de cada una abajo.' : 'Para retocar voces o cambiarlas, enciende AivisSpeech en el Mac (comando <code>aivis</code>).'}</span></div>
-      <button class="chip" id="buscar-vv">🔌 Buscar motores</button>
-      <button class="chip ${Voz.ajustes.saludos !== false ? 'activo' : ''}" id="saludos">👋 Saludan al abrir un camping</button>
-      <button class="chip ${Voz.ajustes.soloGuia ? '' : 'activo'}" id="por-tema">🎭 Cada tema de palabras con su chica</button></div>
-    ${typeof CASTING === 'undefined' ? '' : `<details class="casting" ${reparto.abierto !== false ? 'open' : ''}><summary><b>🎙️ Casting: elige a oído la voz de cada una</b>
+        tr(Voz.estado.listas.aivis ? 'AivisSpeech conectado: voces naturales' : vv ? 'VOICEVOX conectado' : grabadas ? 'Voces grabadas en alta calidad' : 'Voz del sistema')}</b><br>
+      <span class="sub">${grabadas ? tr('{n} frases y palabras ya grabadas con la voz de cada chica: suenan igual en el móvil y sin conexión al motor.', { n: grabadas }) : ''}
+        ${vv ? tr('Lo nuevo se sintetiza al momento. Puedes cambiar la voz de cada una abajo.') : ''}</span></div>
+      <button class="chip" id="buscar-vv">${tr('🔌 Buscar motores')}</button>
+      <button class="chip ${Voz.ajustes.saludos !== false ? 'activo' : ''}" id="saludos">${tr('👋 Saludan al abrir un camping')}</button>
+      <button class="chip ${Voz.ajustes.soloGuia ? '' : 'activo'}" id="por-tema">${tr('🎭 Cada tema de palabras con su chica')}</button></div>
+    ${typeof CASTING === 'undefined' || IDIOMA !== 'es' ? '' : `<details class="casting" ${reparto.abierto !== false ? 'open' : ''}><summary><b>🎙️ Casting: elige a oído la voz de cada una</b>
       <span class="sub">Toca las letras para comparar y marca ⭐ la que más se parezca al anime.</span></summary>
       ${Object.entries(CASTING).map(([k, c]) => `<div class="fila-casting"><div class="avatar" style="background:${FICHAS_PJ[k].color}">${PERSONAJES[k].emoji}</div>
         <div class="casting-txt"><b>${PERSONAJES[k].nombre}</b><span class="jp sub">「${esc(c.frase)}」</span>
@@ -1536,36 +1539,36 @@ async function pintarPersonajes() {
     <div class="pjs">${Object.entries(PERSONAJES).map(([k, p]) => {
       const f = FICHAS_PJ[k], perf = Voz.perfil(k), n = CAMPINGS.filter(c => c.quien.includes(k)).length;
       return `<div class="pj ${Voz.guia === k ? 'guia' : ''}">
-        <div class="pj-cab"><button class="avatar" style="background:${f.color};cursor:pointer" data-hola="${k}" aria-label="Oír a ${p.nombre}">${p.emoji}</button>
+        <div class="pj-cab"><button class="avatar" style="background:${f.color};cursor:pointer" data-hola="${k}" aria-label="${tr('Oír a {n}', { n: p.nombre })}">${p.emoji}</button>
           <div style="flex:1"><b>${p.nombre}</b><span class="jp sub">${p.ja}</span></div></div>
         <p>${esc(f.rasgo)}</p>
         <div class="botones">
-          <button class="chip" data-hola="${k}">🔊 Oírla</button>
-          <button class="chip ${Voz.guia === k ? 'activo' : ''}" data-guia="${k}">${Voz.guia === k ? '⭐ Lee las palabras' : '☆ Que lea las palabras'}</button>
-          ${n ? `<button class="chip" data-donde="${k}">⛺ ${n} campings</button>` : ''}
+          <button class="chip" data-hola="${k}">${tr('🔊 Oírla')}</button>
+          <button class="chip ${Voz.guia === k ? 'activo' : ''}" data-guia="${k}">${tr(Voz.guia === k ? '⭐ Lee las palabras' : '☆ Que lea las palabras')}</button>
+          ${n ? `<button class="chip" data-donde="${k}">⛺ ${tr('{n} campings', { n })}</button>` : ''}
         </div>
-        <details class="plegable"><summary>🎚️ Ajustar su voz y poner tus clips ▾</summary>
-          ${opcionesVoz.length ? `<div class="deslizador" style="grid-template-columns:70px 1fr"><span>Voz</span><select data-voz="${k}" class="selector-voz">
-            <option value="">Recomendada${Voz.estado.hablantes[k] ? ` (${esc(Voz.estado.hablantes[k].nombre)})` : ''}</option>
+        <details class="plegable"><summary>${tr('🎚️ Ajustar su voz y poner tus clips')} ▾</summary>
+          ${opcionesVoz.length ? `<div class="deslizador" style="grid-template-columns:70px 1fr"><span>${tr('Voz')}</span><select data-voz="${k}" class="selector-voz">
+            <option value="">${tr('Recomendada')}${Voz.estado.hablantes[k] ? ` (${esc(Voz.estado.hablantes[k].nombre)})` : ''}</option>
             ${opcionesVoz.map(([v, t]) => `<option value="${v}" ${Voz.ajustes[k]?.voz === v ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></div>` : ''}
-          <div class="deslizador"><span>Tono</span><input type="range" min=".5" max="2" step=".05" value="${perf.tono}" data-ajuste="tono" data-k="${k}"><span>${perf.tono.toFixed(2)}</span></div>
-          <div class="deslizador"><span>Velocidad</span><input type="range" min=".6" max="1.6" step=".05" value="${perf.vel}" data-ajuste="vel" data-k="${k}"><span>${perf.vel.toFixed(2)}</span></div>
+          <div class="deslizador"><span>${tr('Tono')}</span><input type="range" min=".5" max="2" step=".05" value="${perf.tono}" data-ajuste="tono" data-k="${k}"><span>${perf.tono.toFixed(2)}</span></div>
+          <div class="deslizador"><span>${tr('Velocidad')}</span><input type="range" min=".6" max="1.6" step=".05" value="${perf.vel}" data-ajuste="vel" data-k="${k}"><span>${perf.vel.toFixed(2)}</span></div>
           <div class="clips">${Object.entries(MOMENTOS).map(([m, t]) => {
             const clave = `${k}:${m}`, hay = conClip.has(clave);
             return `<div class="clip"><span>${t}</span>
-              <button data-grabar="${clave}" title="Grabar con el micrófono">🎙️</button>
-              <label title="Subir un audio">📁<input type="file" accept="audio/*" data-subir="${clave}" hidden></label>
-              <button class="${hay ? 'si' : ''}" data-probar="${clave}" title="Escuchar">▶︎</button>
-              ${hay ? `<button data-borrar="${clave}" title="Quitar el clip">🗑</button>` : ''}</div>`;
+              <button data-grabar="${clave}" title="${tr('Grabar con el micrófono')}">🎙️</button>
+              <label title="${tr('Subir un audio')}">📁<input type="file" accept="audio/*" data-subir="${clave}" hidden></label>
+              <button class="${hay ? 'si' : ''}" data-probar="${clave}" title="${tr('Escuchar')}">▶︎</button>
+              ${hay ? `<button data-borrar="${clave}" title="${tr('Quitar el clip')}">🗑</button>` : ''}</div>`;
           }).join('')}</div>
-          <button class="chip" data-reset="${k}" style="margin-top:8px">↺ Voz original</button>
+          <button class="chip" data-reset="${k}" style="margin-top:8px">${tr('↺ Voz original')}</button>
         </details>
       </div>`;
     }).join('')}</div>
-    <p class="creditos">Las frases son originales de esta web, escritas al estilo de cada personaje. No se usan audios del anime: las voces reales son de sus actrices y no se pueden publicar.
-      Tus clips se quedan solo en este navegador.
-      Voces: ${esc([...new Set([...(typeof CREDITOS_VOZ === 'undefined' ? [] : CREDITOS_VOZ),
-        ...Object.values(Voz.estado.hablantes).filter(Boolean).map(h => `${h.motor === 'aivis' ? 'AivisSpeech' : 'VOICEVOX'}:${h.nombre}`)])].join(', ') || 'voz del sistema')}.</p>`;
+    <p class="creditos">${tr('Las frases son originales de esta web, escritas al estilo de cada personaje. No se usan audios del anime: las voces reales son de sus actrices y no se pueden publicar.')}
+      ${tr('Tus clips se quedan solo en este navegador.')}
+      ${tr('Voces')}: ${esc([...new Set([...(typeof CREDITOS_VOZ === 'undefined' ? [] : CREDITOS_VOZ),
+        ...Object.values(Voz.estado.hablantes).filter(Boolean).map(h => `${h.motor === 'aivis' ? 'AivisSpeech' : 'VOICEVOX'}:${h.nombre}`)])].join(', ') || tr('voz del sistema'))}.</p>`;
 
   const cont = $('#personajes');
   let ultimaLetra = {};
@@ -1577,7 +1580,7 @@ async function pintarPersonajes() {
   });
   cont.querySelectorAll('[data-elegir]').forEach(b => b.onclick = () => {
     const k = b.dataset.elegir, l = ultimaLetra[k];
-    if (!l) return avisar('Primero escucha alguna letra y luego pulsa ⭐');
+    if (!l) return avisar(tr('Primero escucha alguna letra y luego pulsa ⭐'));
     reparto[k] = l; guardado.escribir('reparto', reparto); pintarPersonajes(); avisar(`⭐ ${PERSONAJES[k].nombre}: voz ${l}`);
   });
   const copiar = $('#copiar-reparto');
@@ -1586,7 +1589,7 @@ async function pintarPersonajes() {
     try { await navigator.clipboard.writeText(t); avisar('📋 Copiado: pégamelo en el chat'); } catch { avisar(t); }
   };
   cont.querySelectorAll('[data-hola]').forEach(b => b.onclick = () => Voz.reaccionar(b.dataset.hola, 'hola'));
-  cont.querySelectorAll('[data-guia]').forEach(b => b.onclick = () => { Voz.guia = b.dataset.guia; pintarPersonajes(); Voz.decir('よろしくね！', b.dataset.guia, { traduccion: '¡Encantada! Ahora leo yo las palabras.' }); });
+  cont.querySelectorAll('[data-guia]').forEach(b => b.onclick = () => { Voz.guia = b.dataset.guia; pintarPersonajes(); Voz.decir('よろしくね！', b.dataset.guia, { traduccion: tr('¡Encantada! Ahora leo yo las palabras.') }); });
   cont.querySelectorAll('[data-donde]').forEach(b => b.onclick = () => { filtro.quien = b.dataset.donde; irA('mapa'); actualizarMapa(true); });
   cont.querySelectorAll('[data-ajuste]').forEach(r => {
     r.oninput = () => { r.nextElementSibling.textContent = (+r.value).toFixed(2); Voz.ajustar(r.dataset.k, r.dataset.ajuste, +r.value); };
@@ -1601,31 +1604,31 @@ async function pintarPersonajes() {
   cont.querySelectorAll('[data-borrar]').forEach(b => b.onclick = async () => { await Voz.clips.borrar(b.dataset.borrar); pintarPersonajes(); });
   cont.querySelectorAll('[data-subir]').forEach(inp => inp.onchange = async () => {
     const f = inp.files[0]; if (!f) return;
-    if (f.size > 5e6) return avisar('Ese audio pasa de 5 MB; recórtalo un poco');
-    await Voz.clips.guardar(inp.dataset.subir, f); avisar('📁 Clip guardado en este navegador'); pintarPersonajes();
+    if (f.size > 5e6) return avisar(tr('Ese audio pasa de 5 MB; recórtalo un poco'));
+    await Voz.clips.guardar(inp.dataset.subir, f); avisar(tr('📁 Clip guardado en este navegador')); pintarPersonajes();
   });
   cont.querySelectorAll('[data-grabar]').forEach(b => b.onclick = () => grabar(b));
-  $('#buscar-vv').onclick = async () => { avisar('🔌 Buscando VOICEVOX…'); avisar(await Voz.detectarMotores() ? `✅ Conectado: ${Object.keys(Voz.estado.listas).map(m => m === 'aivis' ? 'AivisSpeech' : 'VOICEVOX').join(' y ')}` : 'No encuentro motores de voz en este ordenador'); pintarPersonajes(); };
-  $('#por-tema').onclick = () => { Voz.opcion('soloGuia', !Voz.ajustes.soloGuia); pintarPersonajes(); avisar(Voz.ajustes.soloGuia ? '⭐ Ahora la guía lee todas las palabras' : '🎭 Cada tema lo dice su personaje'); };
+  $('#buscar-vv').onclick = async () => { avisar(tr('🔌 Buscando motores de voz…')); avisar(await Voz.detectarMotores() ? `${tr('✅ Conectado')}: ${Object.keys(Voz.estado.listas).map(m => m === 'aivis' ? 'AivisSpeech' : 'VOICEVOX').join(' · ')}` : tr('No encuentro motores de voz en este ordenador')); pintarPersonajes(); };
+  $('#por-tema').onclick = () => { Voz.opcion('soloGuia', !Voz.ajustes.soloGuia); pintarPersonajes(); avisar(tr(Voz.ajustes.soloGuia ? '⭐ Ahora la guía lee todas las palabras' : '🎭 Cada tema lo dice su personaje')); };
   $('#saludos').onclick = () => { Voz.opcion('saludos', Voz.ajustes.saludos === false); pintarPersonajes(); };
 }
 async function grabar(boton) {
   // Segundo toque: parar y guardar
   if (grabadora) return grabadora.stop();
-  if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') return avisar('Este navegador no puede grabar audio');
+  if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') return avisar(tr('Este navegador no puede grabar audio'));
   let flujo;
   try { flujo = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-  catch { return avisar('🎙️ Sin permiso para usar el micrófono'); }
+  catch { return avisar(tr('🎙️ Sin permiso para usar el micrófono')); }
   const trozos = [];
   grabadora = new MediaRecorder(flujo);
   grabadora.ondataavailable = e => trozos.push(e.data);
   grabadora.onstop = async () => {
     flujo.getTracks().forEach(t => t.stop()); grabadora = null;
     await Voz.clips.guardar(boton.dataset.grabar, new Blob(trozos, { type: trozos[0]?.type || 'audio/webm' }));
-    avisar('🎙️ ¡Grabado! Ahora suena tu versión'); pintarPersonajes();
+    avisar(tr('🎙️ ¡Grabado! Ahora suena tu versión')); pintarPersonajes();
   };
   grabadora.start(); boton.classList.add('grabando'); boton.textContent = '⏹';
-  avisar('🎙️ Grabando… toca ⏹ para acabar');
+  avisar(tr('🎙️ Grabando… toca ⏹ para acabar'));
   setTimeout(() => grabadora?.stop(), 8000); // un clip de reacción no necesita más
 }
 
@@ -1748,7 +1751,7 @@ window.Capacitor?.Plugins?.App?.addListener('backButton', () => {
   if (esMovil() && ($('#panel').classList.contains('medio') || $('#panel').classList.contains('lleno'))) return window.panelMovil.poner('mini');
   window.Capacitor.Plugins.App.minimizeApp?.() ?? window.Capacitor.Plugins.App.exitApp();
 });
-addEventListener('appinstalled', () => { $('#instalar').hidden = true; avisar('📲 ¡App instalada! Búscala en tu pantalla de inicio'); });
+addEventListener('appinstalled', () => { $('#instalar').hidden = true; avisar(tr('📲 ¡App instalada! Búscala en tu pantalla de inicio')); });
 Voz.detectarVoicevox();
 </script>
 </body>
