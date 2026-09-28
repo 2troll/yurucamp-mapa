@@ -15,8 +15,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="campings.js?v=4"></script>
 <script src="vocabulario.js?v=4"></script>
-<script src="voces.js?v=9"></script>
-<script src="audios.js?v=9"></script>
+<script src="voces.js?v=10"></script>
+<script src="audios.js?v=10"></script>
+<script src="casting.js?v=10"></script>
 <script src="anime.js?v=8"></script>
 <script src="lugares.js?v=8"></script>
 <style>
@@ -255,6 +256,16 @@
   details.plegable summary { cursor: pointer; font-size: 12.5px; color: var(--suave); padding: 4px 0; list-style: none; }
   details.plegable summary::-webkit-details-marker { display: none; }
   details.plegable[open] summary { margin-bottom: 8px; }
+  .casting { margin-bottom: 14px; padding: 12px 14px; border-radius: 20px; background: linear-gradient(135deg, rgba(255,214,10,.14), rgba(191,90,242,.12)); border: 1px solid rgba(255,214,10,.4); }
+  .casting summary { cursor: pointer; list-style: none; display: flex; flex-direction: column; gap: 2px; }
+  .casting summary::-webkit-details-marker { display: none; }
+  .fila-casting { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid rgba(255,255,255,.1); }
+  .fila-casting:first-of-type { margin-top: 10px; }
+  .casting-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .letras { display: flex; gap: 6px; flex-wrap: wrap; }
+  .letra { min-width: 46px; height: 38px; border-radius: 12px; border: 1px solid var(--borde); background: rgba(255,255,255,.1); font-weight: 700; cursor: pointer; }
+  .letra.sonando { background: rgba(255,214,10,.35); border-color: #ffd60a; }
+  .letra.elegida { box-shadow: 0 0 0 2px #ffd60a inset; }
   .creditos { margin-top: 18px; font-size: 11.5px; color: var(--suave); line-height: 1.5; }
 
   /* Hoguera */
@@ -458,7 +469,10 @@
   #capas.abierto { opacity: 1; transform: none; pointer-events: auto; }
   body.ficha-abierta #capas { right: calc(min(520px, 100vw - 408px) + 92px); }
   #capas header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 17px; }
-  .estilos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .estilos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .rejilla-extras { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .rejilla-extras .capa-lugar { justify-content: center; text-align: center; font-size: 12px; }
+  #creditos-mapa { margin-top: 14px; font-size: 10.5px; }
   .estilo { border: 2px solid transparent; border-radius: 16px; padding: 0 0 6px; background: rgba(255,255,255,.08); cursor: pointer; overflow: hidden; font-size: 11.5px; font-weight: 650; }
   .estilo i { display: block; height: 46px; margin-bottom: 5px; }
   .estilo.activo { border-color: #ffd60a; }
@@ -506,7 +520,7 @@
     #panel.medio { height: 50dvh; }
     #panel.lleno { height: calc(100dvh - var(--dock-h) - var(--arriba) - 20px); }
     #panel:not(.medio):not(.lleno) .fila-orden, #panel:not(.medio):not(.lleno) #lista, #panel:not(.medio):not(.lleno) .sub { display: none; }
-    body.con-globo #panel { transform: translateY(calc(100% + var(--dock-h))); }
+    body.con-globo #panel, body.con-capas #panel { transform: translateY(calc(100% + var(--dock-h))); }
     .hoja { bottom: calc(var(--dock-h) + 8px); }
     #ficha { z-index: 1700; }
     /* Bocadillo arriba, como la Dynamic Island */
@@ -538,9 +552,22 @@
     .leaflet-popup-content-wrapper { background: rgba(28,32,42,.97); }
     #visor { background: rgba(0,0,0,.88); }
     .fuji-marca, body.estilo-noche #mapa::after { animation: none; }
-    .pin, .marca { box-shadow: 0 2px 5px rgba(0,0,0,.35); }
+    /* Medido en un Android: la sombra difuminada del Fuji y las de los marcadores daban un 57 % de fotogramas lentos
+       al arrastrar el mapa. Sin ellas, <1 %. Un borde oscuro da el mismo relieve sin coste. */
+    .fuji-marca { filter: none; }
+    .fuji-marca small { background: rgba(0,0,0,.6); }
+    .pin, .marca { box-shadow: none; outline: 1.5px solid rgba(0,0,0,.35); }
+    .marca .visto, .pin.visto::after { text-shadow: none; }
     .tarjeta, .bloque, .escena, .pj, .modo { transition: none; }
   }
+
+  /* ---------- Fluidez ----------
+     Cada panel animado va en su propia capa (no se repinta al moverse) y las listas largas
+     solo dibujan lo que está en pantalla. */
+  #ficha, .hoja, #capas, #panel, #dock, #herramientas, #bocadillo, #aviso { will-change: transform; contain: layout paint style; }
+  .tarjeta, .item, .sello, .escena, .pj, .check, .parada, .bloque { content-visibility: auto; contain-intrinsic-size: auto 120px; }
+  .rejilla .tarjeta { contain-intrinsic-size: auto 130px; }
+  #lista, .contenido { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 </style>
 </head>
 <body>
@@ -554,8 +581,11 @@
 <section id="capas" class="cristal fino" aria-label="Capas del mapa">
   <header><b>Mapa</b><button class="redondo pequeno" id="capas-cerrar" aria-label="Cerrar">✕</button></header>
   <div class="estilos" id="estilos"></div>
+  <b class="titulo-capas">Capas encima</b>
+  <div id="extras" class="rejilla-extras"></div>
   <b class="titulo-capas">Lugares del anime</b>
   <div id="capas-lugar"></div>
+  <p class="creditos" id="creditos-mapa"></p>
 </section>
 
 <aside id="panel" class="cristal">
@@ -631,7 +661,8 @@ if (typeof CAMPINGS === 'undefined' || typeof VOCABULARIO === 'undefined' || typ
 
 /* ================= Datos fijos ================= */
 // En el Mac se usan las capturas guardadas en fotos/; en la web pública, las del mapa de fans
-if (!['localhost', '127.0.0.1', ''].includes(location.hostname)) CAMPINGS.forEach(c => { c.fotos = c.fotos_web; });
+// Fotos de 640 px siempre: se decodifican rápido en el móvil y bastan para la pantalla
+CAMPINGS.forEach(c => { c.fotos = c.fotos_web; });
 const COLORES = { T1: 'var(--T1)', T2: 'var(--T2)', T3: 'var(--T3)', 'Película': 'var(--Pel)' };
 const PERSONAJES = {
   rin:       { emoji: '🛵', nombre: 'Rin',        ja: '志摩リン' },
@@ -712,7 +743,8 @@ function ruby(ja, kana) {
 
 /* ================= Mapa ================= */
 let seleccionado = null;
-const mapa = L.map('mapa', { zoomControl: false, preferCanvas: true, updateWhenZooming: false, wheelPxPerZoomLevel: 90 }).setView([35.4, 138.4], 8);
+const tactil = matchMedia('(pointer: coarse)').matches;
+const mapa = L.map('mapa', { zoomControl: false, attributionControl: false, preferCanvas: true, updateWhenZooming: false, wheelPxPerZoomLevel: 90, fadeAnimation: !tactil }).setView([35.4, 138.4], 8);
 const pie = 'Capturas: ©あfろ・芳文社／野外活動委員会';
 const satelite = L.layerGroup([
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imágenes © Esri · ' + pie }),
@@ -723,26 +755,75 @@ const noche = L.layerGroup([
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, attribution: 'Mapa © Esri · ' + pie }),
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 }),
 ]);
-// El estilo «anime» es el topográfico pintado con filtros CSS en tonos pastel
-const ESTILOS = [['satelite', '🛰️ Satélite', satelite], ['anime', '🎨 Anime', topo], ['topo', '🗺️ Topo', topo], ['noche', '🌙 Noche', noche]];
+// ---- Mapas base (todos gratis y sin clave). El «anime» es el topográfico con una capa de color encima ----
+const gsi = (capa, ext = 'png', max = 18) => L.tileLayer(`https://cyberjapandata.gsi.go.jp/xyz/${capa}/{z}/{x}/{y}.${ext}`, { maxZoom: 19, maxNativeZoom: max });
+const esri = (serv, max = 19) => L.tileLayer(`https://server.arcgisonline.com/ArcGIS/rest/services/${serv}/MapServer/tile/{z}/{y}/{x}`, { maxZoom: 19, maxNativeZoom: max });
+const ESTILOS = [
+  ['anime', '🎨 Anime', topo, 'Esri'],
+  ['satelite', '🛰️ Satélite', satelite, 'Esri'],
+  ['japon', '🗾 Japón', gsi('std'), '国土地理院 (GSI)'],
+  ['pastel', '🌸 Pastel', gsi('pale'), '国土地理院 (GSI)'],
+  ['foto', '📷 Aérea JP', gsi('seamlessphoto', 'jpg'), '国土地理院 (GSI)'],
+  ['relieve', '🏔️ Montaña', L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 19, maxNativeZoom: 17 }), 'OpenTopoMap · © OpenStreetMap'],
+  ['natgeo', '📜 Clásico', esri('NatGeo_World_Map', 16), 'Esri · National Geographic'],
+  ['noche', '🌙 Noche', noche, 'Esri'],
+];
+// ---- Capas que se superponen ----
+const EXTRAS = {
+  sombras: { t: '⛰️ Sombras del relieve', capa: gsi('hillshademap', 'png', 16).setOpacity(.35).setZIndex(4), credito: '国土地理院 (GSI)' },
+  lluvia: { t: '🌧️ Lluvia ahora (JMA)', capa: null, credito: '気象庁 (JMA)' },
+  ruta: { t: '🧭 Mi ruta', capa: null },
+};
+const extrasOn = new Set(guardado.leer('extras', ['ruta']));
 let estilo = guardado.leer('estilo', 'anime');
 function ponerEstilo(clave) {
-  const nuevo = ESTILOS.find(e => e[0] === clave) || ESTILOS[1];
-  ESTILOS.forEach(e => { if (e[2] !== nuevo[2]) mapa.removeLayer(e[2]); });
-  nuevo[2].addTo(mapa);
+  const nuevo = ESTILOS.find(e => e[0] === clave) || ESTILOS[0];
+  ESTILOS.forEach(e => { if (e[2] !== nuevo[2] && mapa.hasLayer(e[2])) mapa.removeLayer(e[2]); });
+  if (!mapa.hasLayer(nuevo[2])) nuevo[2].addTo(mapa);
+  nuevo[2].bringToBack?.();
   document.body.classList.remove('estilo-anime', 'estilo-noche');
   if (clave === 'anime' || clave === 'noche') document.body.classList.add('estilo-' + clave);
   estilo = nuevo[0]; guardado.escribir('estilo', estilo);
   pintarEstilos();
 }
 const MUESTRA_ESTILO = { satelite: 'linear-gradient(135deg,#1f3b2a,#4a6b3a 50%,#2a4a6b)', anime: 'linear-gradient(135deg,#ffe6c7,#c9f0d3 50%,#bfe1ff)',
-  topo: 'linear-gradient(135deg,#efe9d8,#cfe3c1 50%,#b8d8e8)', noche: 'radial-gradient(circle at 30% 30%,#fff 1px,transparent 2px),linear-gradient(135deg,#1a1f3a,#2d1b44)' };
+  japon: 'linear-gradient(135deg,#f4f1e8,#e6f0d5 45%,#a9d3f0)', pastel: 'linear-gradient(135deg,#fbfaf6,#eef2ea 50%,#dbe9f3)',
+  foto: 'linear-gradient(135deg,#3d4a2d,#6e7b4a 50%,#8a9aa8)', relieve: 'linear-gradient(135deg,#e9e4c9,#c6d8a8 40%,#b89f7c)',
+  natgeo: 'linear-gradient(135deg,#efe4c4,#d9c79a 50%,#9fc4d8)', noche: 'radial-gradient(circle at 30% 30%,#fff 1px,transparent 2px),linear-gradient(135deg,#1a1f3a,#2d1b44)' };
 function pintarEstilos() {
-  $('#estilos').innerHTML = ESTILOS.map(([k, t]) => `<button class="estilo ${estilo === k ? 'activo' : ''}" data-estilo="${k}"><i style="background:${MUESTRA_ESTILO[k]}"></i>${t.split(' ')[1]}</button>`).join('');
+  $('#estilos').innerHTML = ESTILOS.map(([k, t]) => `<button class="estilo ${estilo === k ? 'activo' : ''}" data-estilo="${k}"><i style="background:${MUESTRA_ESTILO[k]}"></i>${t.split(' ').slice(1).join(' ')}</button>`).join('');
   $('#estilos').querySelectorAll('[data-estilo]').forEach(b => b.onclick = () => ponerEstilo(b.dataset.estilo));
+  $('#extras').innerHTML = Object.entries(EXTRAS).map(([k, x]) => `<button class="capa-lugar ${extrasOn.has(k) ? 'activo' : ''}" data-extra="${k}"><span>${x.t}</span></button>`).join('');
+  $('#extras').querySelectorAll('[data-extra]').forEach(b => b.onclick = () => alternarExtra(b.dataset.extra));
+  const creditos = new Set([ESTILOS.find(e => e[0] === estilo)[3], ...[...extrasOn].map(k => EXTRAS[k].credito).filter(Boolean)]);
+  $('#creditos-mapa').textContent = `Mapa: ${[...creditos].join(' · ')} · Leaflet · Capturas: ©あfろ・芳文社／野外活動委員会`;
+}
+async function capaLluvia() {
+  // Última imagen del radar de la JMA (se actualiza cada 5 min)
+  const tiempos = await (await fetch('https://www.jma.go.jp/bosai/jmatile/data/nowc/targetTimes_N1.json', { signal: AbortSignal.timeout(8000) })).json();
+  const t = tiempos[0].basetime;
+  return L.tileLayer(`https://www.jma.go.jp/bosai/jmatile/data/nowc/${t}/none/${t}/surf/hrpns/{z}/{x}/{y}.png`, { maxZoom: 19, maxNativeZoom: 10, opacity: .7, zIndex: 5 });
+}
+async function alternarExtra(k) {
+  const on = !extrasOn.has(k);
+  on ? extrasOn.add(k) : extrasOn.delete(k);
+  guardado.escribir('extras', [...extrasOn]);
+  await aplicarExtra(k);
+  pintarEstilos();
+  if (on && k === 'lluvia') avisar('🌧️ Radar de lluvia de la JMA (hace menos de 5 min)');
+}
+async function aplicarExtra(k) {
+  const on = extrasOn.has(k), x = EXTRAS[k];
+  if (k === 'ruta') return dibujarRuta?.();
+  if (k === 'lluvia' && on && !x.capa) {
+    try { x.capa = await capaLluvia(); } catch { extrasOn.delete(k); return avisar('No he podido cargar el radar de lluvia (¿sin conexión?)'); }
+  }
+  if (!x.capa) return;
+  on ? x.capa.addTo(mapa) : mapa.removeLayer(x.capa);
 }
 ponerEstilo(estilo);
-const abrirCapas = abrir => { $('#capas').classList.toggle('abierto', abrir); $('#capa').classList.toggle('activo', abrir); };
+['sombras', 'lluvia'].forEach(k => extrasOn.has(k) && aplicarExtra(k));
+const abrirCapas = abrir => { $('#capas').classList.toggle('abierto', abrir); $('#capa').classList.toggle('activo', abrir); document.body.classList.toggle('con-capas', abrir); };
 $('#capa').onclick = () => abrirCapas(!$('#capas').classList.contains('abierto'));
 $('#capas-cerrar').onclick = () => abrirCapas(false);
 mapa.on('click', () => abrirCapas(false));
@@ -777,33 +858,51 @@ function pintarParticulas() {
 }
 $('#estacion').onclick = () => { conParticulas = !conParticulas; guardado.escribir('particulas', conParticulas); pintarParticulas(); };
 
-const marcadores = CAMPINGS.map((c, i) => L.marker([c.lat, c.lng], { icon: iconoDe(i) })
-  .bindTooltip(`${c.nombre} · ${c.ja}`, { className: 'cristal-tt', direction: 'top', offset: [0, -20] })
+// Campings y lugares se dibujan en lienzos (canvas). Como marcadores HTML, cada uno era una capa 3D suelta
+// y con 90 en pantalla el mapa iba a tirones en Android (medido: 76-99 % de fotogramas lentos → ~2 %).
+// Dos lienzos: los lugares debajo y los campings encima (el orden de creación decide cuál tapa)
+const renderLugares = L.canvas({ padding: .3 }), renderCampings = L.canvas({ padding: .3 });
+const PinLugar = L.CircleMarker.extend({
+  _updatePath() {
+    if (this._empty()) return;
+    const ctx = this._renderer._ctx, p = this._point, r = this._radius, o = this.options;
+    ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    ctx.fillStyle = o.fillColor; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
+    ctx.font = `${Math.round(r * 1.05)}px system-ui, "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#000';
+    ctx.fillText(o.emoji, p.x, p.y + 1);
+    if (o.sel) { ctx.lineWidth = 3; ctx.strokeStyle = '#ffd60a'; ctx.beginPath(); ctx.arc(p.x, p.y, r + 3, 0, Math.PI * 2); ctx.stroke(); ctx.fillStyle = '#000'; }
+    if (o.visto) { ctx.font = `${Math.round(r * .8)}px system-ui, "Noto Color Emoji", sans-serif`; ctx.fillText('💮', p.x + r * .8, p.y - r * .8); }
+  },
+});
+const COLOR_TEMPORADA = { T1: '#ff9f0a', T2: '#bf5af2', T3: '#0a84ff', 'Película': '#30d158' };
+const marcadores = CAMPINGS.map((c, i) => new PinLugar([c.lat, c.lng], { renderer: renderCampings, radius: 19, fillColor: COLOR_TEMPORADA[c.temporada],
+    emoji: '⛺', visto: visitados.has(i), bubblingMouseEvents: false })
+  .bindTooltip(`${c.nombre} · ${c.ja}`, { className: 'cristal-tt', direction: 'top', offset: [0, -18] })
   .on('click', () => abrirFicha(i)));
-function iconoDe(i) {
-  const c = CAMPINGS[i];
-  return L.divIcon({ className: '', iconSize: [40, 40], iconAnchor: [20, 20],
-    html: `<div class="marca ${i === seleccionado ? 'sel' : ''}" style="background:${COLORES[c.temporada]}">⛺${visitados.has(i) ? '<span class="visto">💮</span>' : ''}</div>` });
+function refrescarIcono(i) {
+  const m = marcadores[i];
+  Object.assign(m.options, { visto: visitados.has(i), sel: i === seleccionado });
+  m.setRadius(i === seleccionado ? 24 : 19);
+  if (i === seleccionado) m.bringToFront();
 }
-function refrescarIcono(i) { marcadores[i].setIcon(iconoDe(i)); }
 
 /* ================= Lugares del anime: casas, instituto, bancos, onsen… ================= */
 const COLOR_LUGAR = { casa: '#ff8fb1', escuela: '#ffd166', banco: '#c79bff', estacion: '#5e9bff', onsen: '#ff7a59', templo: '#e5484d',
   comida: '#ffb340', tienda: '#30c3a0', fuji: '#64d2ff', puente: '#9aa7b8', naturaleza: '#30d158', escena: '#8e8e93' };
 const capasLugar = new Set(guardado.leer('capasLugar', ['casa', 'escuela', 'banco', 'fuji', 'onsen']));
 const lugaresVistos = new Set(guardado.leer('lugaresVistos', []));
-const iconoLugar = i => { const l = LUGARES[i];
-  return L.divIcon({ className: '', iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -28],
-    html: `<div class="pin ${lugaresVistos.has(i) ? 'visto' : ''}" style="background:${COLOR_LUGAR[l.c]}"><span>${CATEGORIAS_LUGAR[l.c].emoji}</span></div>` }); };
-const marcasLugar = LUGARES.map((l, i) => L.marker([l.lat, l.lng], { icon: iconoLugar(i), zIndexOffset: -50 })
-  .bindTooltip(l.n, { className: 'cristal-tt', direction: 'top', offset: [0, -26] })
+const marcasLugar = LUGARES.map((l, i) => new PinLugar([l.lat, l.lng], { renderer: renderLugares, radius: 14, fillColor: COLOR_LUGAR[l.c],
+    emoji: CATEGORIAS_LUGAR[l.c].emoji, visto: lugaresVistos.has(i), bubblingMouseEvents: false })
+  .bindTooltip(l.n, { className: 'cristal-tt', direction: 'top', offset: [0, -14] })
   .bindPopup(() => globoLugar(i), { maxWidth: 300, minWidth: 250, autoPanPaddingTopLeft: matchMedia('(max-width: 820px)').matches ? [16, 110] : [400, 30], autoPanPaddingBottomRight: [16, matchMedia('(max-width: 820px)').matches ? 150 : 110] }));
 // En el móvil el panel de abajo se aparta mientras hay un lugar abierto
 mapa.on('popupopen', () => document.body.classList.add('con-globo')).on('popupclose', () => document.body.classList.remove('con-globo'));
 function globoLugar(i) {
   const l = LUGARES[i], cat = CATEGORIAS_LUGAR[l.c], [pk, pkana, pes] = cat.palabra, voz = cat.voz;
   const div = document.createElement('div'); div.className = 'globo-lugar';
-  div.innerHTML = `${l.f ? `<img src="${l.f}" alt="Escena del anime: ${esc(l.n)}" loading="lazy">` : ''}
+  div.innerHTML = `${l.f ? `<img decoding="async" src="${l.f}" alt="Escena del anime: ${esc(l.n)}" loading="lazy">` : ''}
     <div class="dentro">
       <div class="fila"><span class="etq" style="background:${COLOR_LUGAR[l.c]};color:#111;text-shadow:none;border:0">${cat.emoji} ${esc(cat.titulo)}</span><span class="etq">${esc(l.ep)}</span></div>
       <h3 class="jp">${esc(l.n)}</h3>
@@ -821,7 +920,7 @@ function globoLugar(i) {
   div.querySelector('[data-visto]').onclick = e => {
     lugaresVistos.has(i) ? lugaresVistos.delete(i) : (lugaresVistos.add(i), confeti([cat.emoji, '💮', '✨']), Voz.reaccionar(voz, 'bien'));
     guardado.escribir('lugaresVistos', [...lugaresVistos]);
-    marcasLugar[i].setIcon(iconoLugar(i));
+    marcasLugar[i].options.visto = lugaresVistos.has(i); marcasLugar[i].redraw();
     e.currentTarget.classList.toggle('hecho', lugaresVistos.has(i)); e.currentTarget.textContent = lugaresVistos.has(i) ? '💮 Estuve' : '📍 Estuve aquí';
   };
   return div;
@@ -889,7 +988,7 @@ function pintarLista(idx) {
   $('#contador').textContent = `${idx.length} de ${CAMPINGS.length} campings · 💮 ${visitados.size} visitados`;
   $('#lista').innerHTML = idx.length ? idx.map(i => {
     const c = CAMPINGS[i];
-    const mini = c.fotos[0] ? `<img src="${c.fotos[0]}" alt="" loading="lazy">` : '<div class="sinfoto">⛺</div>';
+    const mini = c.fotos[0] ? `<img decoding="async" src="${c.fotos[0]}" alt="" loading="lazy">` : '<div class="sinfoto">⛺</div>';
     const dist = miPosicion ? ` · ${Math.round(km(miPosicion, [c.lat, c.lng]))} km` : '';
     return `<div class="item ${i === seleccionado ? 'sel' : ''}" data-i="${i}">${mini}${visitados.has(i) ? '<span class="sello-mini">💮</span>' : ''}
       <div><b>${esc(c.nombre)} <span class="jp" style="font-weight:400;color:var(--suave);font-size:12px">${esc(c.ja.split(' ')[0])}</span></b>
@@ -931,7 +1030,7 @@ function abrirFicha(i) {
   if (antes !== null) refrescarIcono(antes);
   refrescarIcono(i);
   const c = CAMPINGS[i];
-  const portada = c.fotos[0] ? `<img src="${c.fotos[0]}" alt="Escena del anime en ${esc(c.nombre)}" data-grande>` : '<div class="sinfoto">🎬</div>';
+  const portada = c.fotos[0] ? `<img decoding="async" src="${c.fotos[0]}" alt="Escena del anime en ${esc(c.nombre)}" data-grande>` : '<div class="sinfoto">🎬</div>';
   const dist = miPosicion ? `<span class="etq">📍 a ${Math.round(km(miPosicion, [c.lat, c.lng]))} km de ti</span>` : '';
   const [pk, pkana, pes] = c.palabra;
   $('#ficha').innerHTML = `
@@ -956,7 +1055,7 @@ function abrirFicha(i) {
         <div style="flex:1"><h4>🈁 Palabra de este camping</h4><p><b class="jp">${esc(pkana)}</b> — ${esc(pes)}</p></div>
         <button class="hablar" data-decir="${esc(pkana)}">🔊</button></div>
       ${c.fotos.length > 1 ? `<div><h4 style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--suave);margin-bottom:8px">📸 Escenas del anime (${c.fotos.length})</h4>
-        <div id="galeria" class="fino">${c.fotos.map(f => `<img src="${f}" alt="" data-grande loading="lazy">`).join('')}</div></div>`
+        <div id="galeria" class="fino">${c.fotos.map(f => `<img decoding="async" src="${f}" alt="" data-grande loading="lazy">`).join('')}</div></div>`
         : (c.fotos.length ? '' : '<p class="sub">Sale en la película; el mapa de fans no tiene capturas de este sitio.</p>')}
       <div class="acciones">
         <button class="boton grande ${visitados.has(i) ? 'hecho' : ''}" id="f-visto">${visitados.has(i) ? '💮 ¡Sellado! Estuviste aquí' : '📍 Estuve aquí — sellar pasaporte'}</button>
@@ -976,8 +1075,9 @@ function abrirFicha(i) {
   $('#ficha').querySelectorAll('[data-saluda]').forEach(b => b.onclick = () => Voz.reaccionar(b.dataset.saluda, 'hola'));
   if (Voz.ajustes.saludos !== false && antes !== i) Voz.reaccionar(anfitriona, 'hola');
   $('#ficha').querySelectorAll('[data-grande]').forEach(img => img.onclick = () => verGrande(img.src));
-  pintarLista(visibles());
-  mapa.flyTo([c.lat, c.lng], 14, { duration: 1 });
+  marcarSeleccion();
+  // En el móvil la ficha tapa el mapa: se recoloca sin animar. En el Mac, vuelo suave tras abrirse la ficha
+  setTimeout(() => esMovil() ? mapa.setView([c.lat, c.lng], 14, { animate: false }) : mapa.flyTo([c.lat, c.lng], 14, { duration: .8 }), 420);
 }
 /* ================= Tiempo real (Open-Meteo: gratis y sin clave) ================= */
 const cacheTiempo = new Map();
@@ -1015,8 +1115,10 @@ function cerrarFicha() {
   $('#ficha').classList.remove('abierta'); document.body.classList.remove('ficha-abierta');
   const antes = seleccionado; seleccionado = null;
   if (antes !== null) refrescarIcono(antes);
-  pintarLista(visibles());
+  marcarSeleccion();
 }
+// Cambia solo la clase del elemento elegido en vez de redibujar la lista entera
+function marcarSeleccion() { document.querySelectorAll('#lista .item').forEach(el => el.classList.toggle('sel', +el.dataset.i === seleccionado)); }
 function alternarVisita(i) {
   const rangoAntes = rangoActual();
   visitados.has(i) ? visitados.delete(i) : visitados.add(i);
@@ -1050,7 +1152,14 @@ function pintarPalabras() {
     <div class="del-dia"><div class="kanji jp">${esc(hoy.w)}</div><div style="flex:1"><h4 style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--suave)">☀️ Palabra del día</h4>
       <p><b class="jp">${esc(hoy.kana)}</b> · <i>${esc(hoy.romaji)}</i> — ${esc(hoy.es)} ${hoy.emoji}</p></div><button class="hablar" data-decir="${esc(hoy.w)}" data-quien="${vozPalabra(hoy.cat)}">🔊</button></div>
     ${lista.length ? '' : '<div class="vacia">Todavía no has marcado ninguna con ⭐</div>'}
-    <div class="rejilla">${lista.map(p => `
+    <div class="rejilla">${lista.slice(0, PRIMERAS).map(tarjetaPalabra).join('')}</div>`;
+  // El resto de tarjetas se pinta cuando ya terminó la animación de la hoja: así abre sin tirones
+  clearTimeout(pintarPalabras.resto);
+  if (lista.length > PRIMERAS) pintarPalabras.resto = setTimeout(() => $('#palabras .rejilla')?.insertAdjacentHTML('beforeend', lista.slice(PRIMERAS).map(tarjetaPalabra).join('')), 380);
+}
+const PRIMERAS = 24;
+function tarjetaPalabra(p) {
+  return `
       <div class="tarjeta ${ocultar ? 'oculta' : ''}" data-w="${esc(p.w)}" data-quien="${vozPalabra(p.cat)}">
         <button class="altavoz" data-decir="${esc(p.w)}" data-quien="${vozPalabra(p.cat)}" title="Escuchar">🔊</button>
         <span class="quien-dice" style="background:${FICHAS_PJ[vozPalabra(p.cat)].color}" title="La dice ${PERSONAJES[vozPalabra(p.cat)].nombre}">${PERSONAJES[vozPalabra(p.cat)].emoji}</span>
@@ -1060,15 +1169,24 @@ function pintarPalabras() {
         ${p.kana !== p.w ? `<div class="lectura jp">${esc(p.kana)}</div>` : ''}
         <div class="romaji">${esc(p.romaji)}</div>
         <div class="es">${esc(p.es)}</div>
-      </div>`).join('')}</div>`;
-  $('#palabras').querySelectorAll('[data-decir]').forEach(b => b.onclick = e => { e.stopPropagation(); hablar(b.dataset.decir, b.dataset.quien); });
-  $('#palabras').querySelectorAll('[data-e]').forEach(b => b.onclick = e => {
-    e.stopPropagation(); const w = b.dataset.e;
-    aprendidas.has(w) ? aprendidas.delete(w) : (aprendidas.add(w), aprendidas.size % 10 === 0 && (confeti(['⭐', '🈁', '🎌']), avisar(`⭐ ¡${aprendidas.size} palabras aprendidas!`)));
-    guardado.escribir('aprendidas', [...aprendidas]); pintarPalabras();
-  });
-  $('#palabras').querySelectorAll('.tarjeta').forEach(t => t.onclick = () => { t.classList.toggle('oculta'); if (!t.classList.contains('oculta')) hablar(t.dataset.w, t.dataset.quien); });
+      </div>`;
 }
+// Un solo manejador para todas las tarjetas (también las que se pintan después)
+$('#palabras').addEventListener('click', e => {
+  if (seccionPalabras === 'dialogos') return;
+  const decir = e.target.closest('[data-decir]'), estrella = e.target.closest('[data-e]'), tarjeta = e.target.closest('.tarjeta');
+  if (decir) return hablar(decir.dataset.decir, decir.dataset.quien);
+  if (estrella) {
+    const w = estrella.dataset.e, ahora = !aprendidas.has(w);
+    ahora ? aprendidas.add(w) : aprendidas.delete(w);
+    if (ahora && aprendidas.size % 10 === 0) { confeti(['⭐', '🈁', '🎌']); avisar(`⭐ ¡${aprendidas.size} palabras aprendidas!`); }
+    guardado.escribir('aprendidas', [...aprendidas]);
+    estrella.classList.toggle('si', ahora); estrella.textContent = ahora ? '⭐' : '☆';
+    $('#palabras-sub').textContent = `${TODAS_PALABRAS.length} palabras y frases · ⭐ ${aprendidas.size} aprendidas · toca 🔊 para oírlas`;
+    return;
+  }
+  if (tarjeta) { tarjeta.classList.toggle('oculta'); if (!tarjeta.classList.contains('oculta')) hablar(tarjeta.dataset.w, tarjeta.dataset.quien); }
+});
 $('#modo-tarjeta').onclick = e => { ocultar = !ocultar; e.currentTarget.classList.toggle('activo', ocultar); pintarPalabras(); };
 $('#solo-estrella').onclick = e => { soloEstrella = !soloEstrella; e.currentTarget.classList.toggle('activo', soloEstrella); pintarPalabras(); };
 
@@ -1171,7 +1289,7 @@ function preguntaDe(modo) {
   if (modo === 'camping') {
     const bien = conFoto[Math.floor(Math.random() * conFoto.length)];
     const foto = bien.fotos[Math.floor(Math.random() * bien.fotos.length)];
-    return { enunciado: `<img src="${foto}" alt="Captura del anime">`, ops: distintas(bien, conFoto, c => c.nombre).map(c => ({ txt: esc(c.nombre), ok: c === bien })), explica: `${bien.nombre} · ${bien.ja} · ${bien.ep}`, decir: bien.kana, quien: bien.quien[0] };
+    return { enunciado: `<img decoding="async" src="${foto}" alt="Captura del anime">`, ops: distintas(bien, conFoto, c => c.nombre).map(c => ({ txt: esc(c.nombre), ok: c === bien })), explica: `${bien.nombre} · ${bien.ja} · ${bien.ep}`, decir: bien.kana, quien: bien.quien[0] };
   }
   if (modo === 'kanji') {
     const conKanji = CAMPINGS.filter(c => /[一-龯]/.test(c.ja));
@@ -1204,7 +1322,7 @@ function preguntaDe(modo) {
   const si = bien.quien[Math.floor(Math.random() * bien.quien.length)];
   const no = baraja(Object.keys(PERSONAJES).filter(p => !bien.quien.includes(p))).slice(0, 3);
   if (no.length < 3) return preguntaDe(modo);
-  const foto = bien.fotos[0] ? `<img src="${bien.fotos[0]}" alt="" style="max-height:200px"><br>` : '';
+  const foto = bien.fotos[0] ? `<img decoding="async" src="${bien.fotos[0]}" alt="" style="max-height:200px"><br>` : '';
   return { enunciado: `${foto}<div style="font-size:24px;font-weight:800;margin-top:10px">${esc(bien.nombre)}</div><div class="sub">${esc(bien.ep)} · ¿quién está en esta acampada?</div>`,
     ops: baraja([si, ...no]).map(p => ({ txt: `${PERSONAJES[p].emoji} ${PERSONAJES[p].nombre}`, ok: p === si })), explica: `Acampan: ${bien.quien.map(q => PERSONAJES[q].nombre).join(', ')}` };
 }
@@ -1255,10 +1373,10 @@ let seccionViaje = 'ruta';
 const ruta = guardado.leer('ruta', []).filter(i => CAMPINGS[i]);
 const guardarRuta = () => { guardado.escribir('ruta', ruta); dibujarRuta(); };
 document.querySelectorAll('#seg-viaje button').forEach(b => b.onclick = () => { seccionViaje = b.dataset.s; pintarMochila(); });
-const lineaRuta = L.polyline([], { color: '#ffd60a', weight: 4, dashArray: '8 10', opacity: .95 });
+const lineaRuta = L.polyline([], { renderer: renderLugares, color: '#ffd60a', weight: 4, dashArray: '8 10', opacity: .95 });
 function dibujarRuta() {
   lineaRuta.setLatLngs(ruta.map(i => [CAMPINGS[i].lat, CAMPINGS[i].lng]));
-  ruta.length > 1 ? lineaRuta.addTo(mapa) : mapa.removeLayer(lineaRuta);
+  ruta.length > 1 && extrasOn.has('ruta') ? lineaRuta.addTo(mapa) : mapa.removeLayer(lineaRuta);
 }
 function alternarRuta(i) {
   const k = ruta.indexOf(i);
@@ -1388,6 +1506,8 @@ function pintarPasaporte() {
 
 /* ================= Personajes y voces ================= */
 let grabadora = null;
+const reparto = guardado.leer('reparto', {});
+const textoReparto = () => Object.entries(reparto).filter(([k]) => PERSONAJES[k]).map(([k, l]) => `${PERSONAJES[k].nombre} ${l}`).join(' · ');
 async function pintarPersonajes() {
   const conClip = new Set(await Voz.clips.claves() || []);
   const vv = Voz.estado.voicevox, grabadas = typeof AUDIOS === 'undefined' ? 0 : Object.keys(AUDIOS).length;
@@ -1401,6 +1521,15 @@ async function pintarPersonajes() {
       <button class="chip" id="buscar-vv">🔌 Buscar motores</button>
       <button class="chip ${Voz.ajustes.saludos !== false ? 'activo' : ''}" id="saludos">👋 Saludan al abrir un camping</button>
       <button class="chip ${Voz.ajustes.soloGuia ? '' : 'activo'}" id="por-tema">🎭 Cada tema de palabras con su chica</button></div>
+    ${typeof CASTING === 'undefined' ? '' : `<details class="casting" ${reparto.abierto !== false ? 'open' : ''}><summary><b>🎙️ Casting: elige a oído la voz de cada una</b>
+      <span class="sub">Toca las letras para comparar y marca ⭐ la que más se parezca al anime.</span></summary>
+      ${Object.entries(CASTING).map(([k, c]) => `<div class="fila-casting"><div class="avatar" style="background:${FICHAS_PJ[k].color}">${PERSONAJES[k].emoji}</div>
+        <div class="casting-txt"><b>${PERSONAJES[k].nombre}</b><span class="jp sub">「${esc(c.frase)}」</span>
+          <div class="letras">${c.voces.map(v => `<button class="letra ${reparto[k] === v.letra ? 'elegida' : ''}" data-cast="${k}" data-letra="${v.letra}" title="${esc(v.nombre)} (${esc(v.estilo)})">▶ ${v.letra}</button>`).join('')}
+            <button class="chip estrella-cast" data-elegir="${k}">${reparto[k] ? '⭐ ' + reparto[k] : '☆ Elegir'}</button></div></div></div>`).join('')}
+      <div class="controles" style="margin-top:10px"><b>Tu reparto:</b> <span id="resumen-reparto">${textoReparto() || 'aún sin elegir'}</span>
+        <button class="chip" id="copiar-reparto">📋 Copiar para Claude</button></div>
+    </details>`}
     <div class="pjs">${Object.entries(PERSONAJES).map(([k, p]) => {
       const f = FICHAS_PJ[k], perf = Voz.perfil(k), n = CAMPINGS.filter(c => c.quien.includes(k)).length;
       return `<div class="pj ${Voz.guia === k ? 'guia' : ''}">
@@ -1436,6 +1565,23 @@ async function pintarPersonajes() {
         ...Object.values(Voz.estado.hablantes).filter(Boolean).map(h => `${h.motor === 'aivis' ? 'AivisSpeech' : 'VOICEVOX'}:${h.nombre}`)])].join(', ') || 'voz del sistema')}.</p>`;
 
   const cont = $('#personajes');
+  let ultimaLetra = {};
+  cont.querySelectorAll('[data-cast]').forEach(b => b.onclick = () => {
+    const k = b.dataset.cast, c = CASTING[k], v = c.voces.find(x => x.letra === b.dataset.letra);
+    ultimaLetra[k] = v.letra;
+    cont.querySelectorAll(`[data-cast="${k}"]`).forEach(x => x.classList.toggle('sonando', x === b));
+    Voz.oir(v.f, k, c.frase, `${v.letra}: ${v.nombre} · ${c.es}`);
+  });
+  cont.querySelectorAll('[data-elegir]').forEach(b => b.onclick = () => {
+    const k = b.dataset.elegir, l = ultimaLetra[k];
+    if (!l) return avisar('Primero escucha alguna letra y luego pulsa ⭐');
+    reparto[k] = l; guardado.escribir('reparto', reparto); pintarPersonajes(); avisar(`⭐ ${PERSONAJES[k].nombre}: voz ${l}`);
+  });
+  const copiar = $('#copiar-reparto');
+  if (copiar) copiar.onclick = async () => {
+    const t = 'Reparto de voces: ' + (textoReparto() || '(vacío)');
+    try { await navigator.clipboard.writeText(t); avisar('📋 Copiado: pégamelo en el chat'); } catch { avisar(t); }
+  };
   cont.querySelectorAll('[data-hola]').forEach(b => b.onclick = () => Voz.reaccionar(b.dataset.hola, 'hola'));
   cont.querySelectorAll('[data-guia]').forEach(b => b.onclick = () => { Voz.guia = b.dataset.guia; pintarPersonajes(); Voz.decir('よろしくね！', b.dataset.guia, { traduccion: '¡Encantada! Ahora leo yo las palabras.' }); });
   cont.querySelectorAll('[data-donde]').forEach(b => b.onclick = () => { filtro.quien = b.dataset.donde; irA('mapa'); actualizarMapa(true); });

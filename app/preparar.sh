@@ -3,8 +3,8 @@
 set -e
 cd "$(dirname "$0")"
 rm -rf www && mkdir -p www/vendor vendor
-for f in index.html campings.js vocabulario.js voces.js anime.js lugares.js audios.js manifest.json; do cp "../$f" www/; done
-cp -R ../iconos ../voces ../lugares ../fotos www/
+for f in index.html campings.js vocabulario.js voces.js anime.js lugares.js audios.js casting.js manifest.json; do cp "../$f" www/; done
+cp -R ../iconos ../voces ../lugares ../fotos-web www/
 CDN=https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4
 [ -s vendor/leaflet.min.js ] || curl -sfL -o vendor/leaflet.min.js "$CDN/leaflet.min.js"
 [ -s vendor/leaflet.min.css ] || curl -sfL -o vendor/leaflet.min.css "$CDN/leaflet.min.css"

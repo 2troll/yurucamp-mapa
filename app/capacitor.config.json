@@ -2,5 +2,9 @@
   "appId": "io.github.dostroll.yurucamp",
   "appName": "ゆるキャン△",
   "webDir": "www",
-  "android": { "backgroundColor": "#0b1a24", "allowMixedContent": false }
+  "android": {
+    "backgroundColor": "#0b1a24",
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false
+  }
 }

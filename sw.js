@@ -1,8 +1,8 @@
 // Service worker: la app funciona sin conexión y sin el Mac.
 // Cambia VERSION al publicar cambios para que el teléfono descargue lo nuevo.
-const VERSION = 'v12';
+const VERSION = 'v13';
 const NUCLEO = `nucleo-${VERSION}`, MEDIOS = 'medios-v1', TESELAS = 'teselas-v1';
-const ARCHIVOS = ['./', 'index.html', 'campings.js', 'vocabulario.js', 'voces.js', 'anime.js', 'lugares.js', 'audios.js', 'manifest.json',
+const ARCHIVOS = ['./', 'index.html', 'campings.js', 'vocabulario.js', 'voces.js', 'anime.js', 'lugares.js', 'audios.js', 'casting.js', 'manifest.json',
   'iconos/icono-192.png', 'iconos/icono-512.png',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css', 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'];
 const MAX_TESELAS = 2500;
@@ -35,7 +35,8 @@ async function guardarVoces() {
 }
 
 const esMedio = p => /\/(voces|lugares|fotos|fotos-web|iconos)\//.test(p);
-const esTesela = u => u.hostname === 'server.arcgisonline.com';
+// Teselas de mapa que no cambian (el radar de la JMA no: va siempre en directo)
+const esTesela = u => ['server.arcgisonline.com', 'cyberjapandata.gsi.go.jp'].includes(u.hostname) || u.hostname.endsWith('tile.opentopomap.org');
 
 self.addEventListener('fetch', e => {
   const req = e.request;

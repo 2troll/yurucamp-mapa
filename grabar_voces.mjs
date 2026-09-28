@@ -48,7 +48,7 @@ const hablante = {};
 for (const [q, f] of Object.entries({ ...FICHAS_PJ, ...VOCES_EXTRA })) {
   const cands = [...(f.aivis || []).map(c => ['aivis', ...c]), ...(f.vv || []).map(c => ['voicevox', ...c])];
   for (const [motor, nombre, estilo] of cands) {
-    const v = listas[motor]?.find(x => x.nombre === nombre && x.estilo === estilo);
+    const v = listas[motor]?.find(x => x.nombre.startsWith(nombre) && x.estilo === estilo);
     if (v) { hablante[q] = { motor, ...v }; break; }
   }
   if (!hablante[q]) throw new Error(`Ninguna voz instalada para ${q}`);

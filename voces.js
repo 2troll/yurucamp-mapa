@@ -155,7 +155,7 @@ const Voz = (() => {
     return estado.voicevox;
   }
   function elegirHablante(quien, f) {
-    const buscar = (motor, nombre, estilo) => { const v = estado.listas[motor]?.find(x => x.nombre === nombre && (!estilo || x.estilo === estilo)); return v && { motor, ...v }; };
+    const buscar = (motor, nombre, estilo) => { const v = estado.listas[motor]?.find(x => x.nombre.startsWith(nombre) && (!estilo || x.estilo === estilo)); return v && { motor, ...v }; };
     // 1) La que eligió el usuario en «Voces»
     const elegida = ajustes[quien]?.voz;
     if (elegida) { const [motor, id] = elegida.split(':'); const v = estado.listas[motor]?.find(x => String(x.id) === id); if (v) return { motor, ...v }; }
@@ -246,8 +246,11 @@ const Voz = (() => {
     return decir(ja, quien, { momento, traduccion: es });
   }
 
+  // Reproduce un archivo concreto (las muestras del casting) con el bocadillo del personaje
+  async function oir(url, quien, texto, traduccion) { parar(); alHablar({ texto, quien, traduccion }); try { await tocar(url); } catch (e) { console.warn('[voces]', e); } }
+
   return {
-    decir, reaccionar, parar, clips, estado, ajustes,
+    decir, reaccionar, parar, oir, clips, estado, ajustes,
     detectarVoicevox: detectarMotores, detectarMotores,
     get guia() { return ajustes.guia || 'nadeshiko'; },
     set guia(q) { ajustes.guia = q; guardarAjustes(); },
