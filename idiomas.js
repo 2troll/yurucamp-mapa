@@ -1,3 +1,6 @@
+// Safari < 16 no tiene AbortSignal.timeout (se usa al pedir el tiempo y el radar de lluvia)
+if (!AbortSignal.timeout) AbortSignal.timeout = ms => { const c = new AbortController(); setTimeout(() => c.abort(), ms); return c.signal; };
+
 // Idiomas de la interfaz. El español es el original: las demás lenguas viven en i18n/xx.js
 // (generadas por i18n/traducir.mjs) y solo se descarga la que se usa, para no frenar el arranque.
 const IDIOMAS = {

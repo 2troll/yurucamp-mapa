@@ -8,7 +8,7 @@ css.textContent = `
   #radar { position: fixed; top: 16px; right: 76px; z-index: 1010; width: 290px; padding: 14px 16px 16px; border-radius: 26px;
     opacity: 0; transform: scale(.94); transform-origin: top right; pointer-events: none; transition: opacity .2s, transform .2s, box-shadow .3s; }
   /* Sin cristal borroso: con la aguja girando, el blur se recalculaba en cada fotograma (medido: saltos de 0,5 s) */
-  #radar { backdrop-filter: none; -webkit-backdrop-filter: none; background: linear-gradient(135deg, rgba(40,46,58,.95), rgba(18,22,30,.93)); }
+  #radar { backdrop-filter: none; -webkit-backdrop-filter: none; background: linear-gradient(135deg, #283040, #161b24); }
   #radar.alineado { box-shadow: 0 0 0 2px var(--oro), 0 12px 40px rgba(0,0,0,.35); }
   body.ficha-abierta #radar { right: calc(min(520px, 100vw - 408px) + 92px); }
   #radar.abierto { opacity: 1; transform: none; pointer-events: auto; }
@@ -25,8 +25,8 @@ css.textContent = `
   .brujula .centro small { display: block; color: var(--suave); font-size: 12px; }
   .brujula .yo { position: absolute; left: 50%; top: -6px; transform: translateX(-50%); width: 0; height: 0;
     border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 12px solid #fff; }
-  #radar .dato { text-align: center; font-size: 14px; line-height: 1.45; min-height: 64px; }
-  #radar .dato .gran { font-size: 21px; font-weight: 800; }
+  #radar .radar-dato { text-align: center; font-size: 14px; line-height: 1.45; min-height: 64px; }
+  #radar .radar-dato .gran { font-size: 21px; font-weight: 800; }
   #radar .consejo { font-size: 12px; color: var(--suave); text-align: center; margin-top: 6px; }
   #radar .fila { display: flex; gap: 6px; justify-content: center; margin-top: 8px; flex-wrap: wrap; }
   #menu-idioma { position: fixed; z-index: 1800; padding: 8px; border-radius: 20px; display: none; min-width: 180px; }
@@ -36,7 +36,8 @@ css.textContent = `
   #hoy { position: fixed; left: 50%; top: 16px; z-index: 1700; transform: translate(-50%, -140%); transition: transform .35s cubic-bezier(.2,.9,.3,1.2);
     display: flex; gap: 12px; align-items: center; padding: 10px 14px; border-radius: 22px; max-width: min(440px, calc(100vw - 32px)); cursor: pointer; }
   #hoy.visible { transform: translate(-50%, 0); }
-  #hoy .kanji { font-size: 30px; font-weight: 800; }
+  #hoy .kanji { font-size: 30px; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
+  #hoy > div:last-child { min-width: 0; }
   #hoy small { color: var(--suave); display: block; }
   .cielo { display: flex; gap: 12px; align-items: center; margin-top: 10px; padding: 10px 12px; border-radius: 16px; background: rgba(0,0,0,.2); }
   .cielo .luna { font-size: 34px; line-height: 1; }
@@ -45,7 +46,9 @@ css.textContent = `
   .srs i.si { background: var(--oro); }
   @media (max-width: 820px) {
     #radar, body.ficha-abierta #radar { top: var(--arriba); right: 62px; width: min(290px, calc(100vw - 74px)); }
-    #hoy { top: var(--arriba); }
+    /* En el móvil ocupa el ancho entre el borde y la barra de herramientas (centrada con left:50% se quedaba en media pantalla) */
+    #hoy { top: var(--arriba); left: 12px; right: 66px; max-width: none; transform: translateY(-140%); }
+    #hoy.visible { transform: none; }
   }
   @media (prefers-reduced-motion: reduce) { #radar, #hoy { transition: none; } }
 `;
@@ -110,7 +113,7 @@ panel.innerHTML = `<header><b>🧭 ${tr('Brújula')} · <span class="jp">方位�
     <svg class="dial" viewBox="0 0 200 200" aria-hidden="true">${dial}</svg>
     <div class="aguja"><svg viewBox="0 0 200 200" aria-hidden="true"><path d="M100 30 L108 100 L100 92 L92 100 Z" fill="#ffd60a"/></svg><i id="radar-emoji">🗻</i></div>
     <div class="centro"><b id="radar-grados">—</b><small class="jp" id="radar-mira"></small></div></div>
-  <div class="dato" id="radar-dato"></div>
+  <div class="radar-dato" id="radar-dato"></div>
   <div class="consejo" id="radar-consejo"></div>
   <div class="fila"><button class="chip" id="radar-voz">🔊 ${tr('Dilo')}</button><button class="chip" id="radar-linea">📏 ${tr('Línea en el mapa')}</button></div>`;
 document.body.appendChild(panel);
@@ -224,6 +227,12 @@ $('#radar-voz').onclick = () => hablar(frase, objetivo === 'fuji' ? 'rin' : 'nad
 $('#radar-linea').onclick = () => { if (desde) ponerLinea(); };
 // Al abrir otra vista o las capas, la brújula se cierra sola
 document.querySelectorAll('#dock button, #capa').forEach(b => b.addEventListener('click', () => panel.classList.contains('abierto') && abrirRadar(false)));
+// Botón «atrás» de Android: primero se cierran el menú de idioma y la brújula
+window.cerrarExtras = () => {
+  if (menuIdioma.classList.contains('abierto')) { menuIdioma.classList.remove('abierto'); return true; }
+  if (panel.classList.contains('abierto')) { abrirRadar(false); return true; }
+  return false;
+};
 
 /* ================= 🌙 Cielo de esta noche (la luna se calcula aquí, sin red) ================= */
 const LUNAS = [[1.85, '🌑', '新月', 'しんげつ', 'luna nueva'], [5.5, '🌒', '三日月', 'みかづき', 'luna creciente'], [9.2, '🌓', '上弦の月', 'じょうげんのつき', 'cuarto creciente'],

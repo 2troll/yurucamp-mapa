@@ -13,13 +13,13 @@
 <link rel="apple-touch-icon" href="iconos/apple-touch-icon.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="idiomas.js?v=2"></script>
+<script src="idiomas.js?v=3"></script>
 <script src="campings.js?v=4"></script>
 <script src="vocabulario.js?v=4"></script>
 <script src="voces.js?v=10"></script>
 <script src="audios.js?v=10" defer></script>
 <script src="casting.js?v=10" defer></script>
-<script src="extras.js?v=6" defer></script>
+<script src="extras.js?v=9" defer></script>
 <script src="anime.js?v=8"></script>
 <script src="lugares.js?v=8"></script>
 <style>
@@ -1267,6 +1267,8 @@ const MODOS = {
   contesta: { emoji: '💬', titulo: '¿Qué contestas?', desc: 'Te hablan en el camping o en la tienda: elige la respuesta' },
 };
 for (const m of Object.values(MODOS)) { m.titulo = tr(m.titulo); m.desc = tr(m.desc); }
+// La bandera del juego de traducir es la del idioma elegido (en japonés se aprende inglés)
+MODOS.es_ja.emoji = IDIOMA === 'ja' ? IDIOMAS.en.bandera : IDIOMAS[IDIOMA].bandera;
 let partida = null;
 const record = guardado.leer('records', {});
 function pintarMenuQuiz() {
@@ -1742,6 +1744,7 @@ addEventListener('beforeinstallprompt', e => {
 });
 // Botón «atrás» de Android: cierra lo que esté abierto antes de salir de la app
 window.Capacitor?.Plugins?.App?.addListener('backButton', () => {
+  if (window.cerrarExtras?.()) return;
   if (visor.classList.contains('abierto')) return visor.classList.remove('abierto');
   if ($('#capas').classList.contains('abierto')) return abrirCapas(false);
   if (document.querySelector('.leaflet-popup')) return mapa.closePopup();

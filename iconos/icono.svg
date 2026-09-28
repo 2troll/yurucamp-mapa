@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Icono original de la app (no usa imágenes del anime): Fuji al atardecer, tienda y hoguera -->
+  <defs>
+    <linearGradient id="cielo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b1f4b"/>
+      <stop offset=".45" stop-color="#6a3f8f"/>
+      <stop offset=".72" stop-color="#f08a5d"/>
+      <stop offset="1" stop-color="#ffc56b"/>
+    </linearGradient>
+    <linearGradient id="fuji" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4b5c9e"/>
+      <stop offset="1" stop-color="#2b2f5e"/>
+    </linearGradient>
+    <linearGradient id="colina" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1f3b3a"/>
+      <stop offset="1" stop-color="#0f1f24"/>
+    </linearGradient>
+    <linearGradient id="tienda" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffb13b"/>
+      <stop offset="1" stop-color="#ff7a1a"/>
+    </linearGradient>
+    <radialGradient id="brillo" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#ffd27a" stop-opacity=".75"/>
+      <stop offset="1" stop-color="#ffd27a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#cielo)"/>
+  <g fill="#fff">
+    <circle cx="170" cy="150" r="6"/><circle cx="300" cy="90" r="4"/><circle cx="820" cy="120" r="5"/>
+    <circle cx="700" cy="210" r="3.5"/><circle cx="900" cy="260" r="4"/><circle cx="110" cy="300" r="3.5"/><circle cx="520" cy="70" r="3"/>
+  </g>
+  <circle cx="780" cy="330" r="46" fill="#fff6d8" opacity=".95"/>
+  <!-- Fuji -->
+  <path d="M60 760 L420 330 Q512 250 604 330 L964 760 Z" fill="url(#fuji)"/>
+  <path d="M420 330 Q512 250 604 330 L664 402 L618 384 L584 420 L548 386 L512 424 L476 386 L440 420 L406 384 L360 402 Z" fill="#f4f7ff"/>
+  <!-- Colinas -->
+  <path d="M0 700 Q220 610 430 690 T1024 660 L1024 1024 L0 1024 Z" fill="url(#colina)"/>
+  <path d="M0 820 Q300 740 560 800 T1024 780 L1024 1024 L0 1024 Z" fill="#0b171b"/>
+  <!-- Resplandor de la hoguera -->
+  <circle cx="700" cy="850" r="170" fill="url(#brillo)"/>
+  <!-- Tienda -->
+  <path d="M250 900 L430 640 L610 900 Z" fill="url(#tienda)"/>
+  <path d="M430 640 L480 900 L380 900 Z" fill="#7a2e0e"/>
+  <path d="M430 640 L430 900" stroke="#ffe0a8" stroke-width="10"/>
+  <!-- Hoguera -->
+  <path d="M640 905 L760 870 M650 870 L770 905" stroke="#5a3a22" stroke-width="18" stroke-linecap="round"/>
+  <path d="M700 870 C660 830 680 790 705 760 C712 795 740 800 735 830 C750 815 752 800 748 788 C775 815 770 860 700 870 Z" fill="#ff8a1f"/>
+  <path d="M703 865 C685 845 693 820 708 805 C713 825 728 830 724 848 C730 842 732 836 731 830 C742 845 736 862 703 865 Z" fill="#ffe27a"/>
+</svg>
