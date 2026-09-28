@@ -177,8 +177,8 @@ for c in CAMPINGS:
             fotos += m['fotos']
     fotos = list(dict.fromkeys(fotos))[:8]
     ficha = {k: v for k, v in c.items() if k != 'claves'}
-    # fotos: copias locales; fotos_web: las del mapa de fans, para la versión publicada (no se re-alojan capturas)
-    ficha.update(lat=base['lat'], lng=base['lng'], fotos=[bajar(u) for u in fotos], fotos_web=[u + '?fife=s1000' for u in fotos])
+    # fotos: copias a 1000 px para el Mac; fotos_web: copias a 640 px que se publican (Google no deja enlazar las originales)
+    ficha.update(lat=base['lat'], lng=base['lng'], fotos=[bajar(u) for u in fotos], fotos_web=[bajar(u).replace('fotos/', 'fotos-web/') for u in fotos])
     salida.append(ficha)
     print(f"{len(ficha['fotos'])} fotos · {c['nombre']}")
 
