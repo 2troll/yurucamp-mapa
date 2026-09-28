@@ -8,7 +8,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="campings.js?v=4"></script>
 <script src="vocabulario.js?v=4"></script>
-<script src="voces.js?v=6"></script>
+<script src="voces.js?v=7"></script>
+<script src="anime.js?v=7"></script>
 <style>
   :root {
     --borde: rgba(255,255,255,.38);
@@ -250,6 +251,54 @@
   #hoguera { position: fixed; top: 16px; right: 150px; z-index: 900; border-radius: 999px; padding: 10px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
   #hoguera.activo { background: linear-gradient(135deg, rgba(255,120,30,.7), rgba(255,69,58,.5)); }
 
+  /* Segmentos (Palabras/Diálogos, Ruta/Mochila) */
+  .segmentos { display: inline-flex; padding: 3px; border-radius: 999px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); margin-top: 10px; }
+  .segmentos button { border: 0; background: none; padding: 7px 14px; border-radius: 999px; font-size: 13px; font-weight: 650; cursor: pointer; color: var(--suave); }
+  .segmentos button.activo { background: rgba(255,255,255,.9); color: #111; text-shadow: none; }
+
+  /* Diálogos */
+  .escenas { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+  .escena { text-align: left; border-radius: 20px; padding: 14px; cursor: pointer; border: 1px solid rgba(255,255,255,.18);
+    background: linear-gradient(140deg, rgba(255,255,255,.14), rgba(255,255,255,.04)); display: flex; flex-direction: column; gap: 6px; }
+  .escena .emo { font-size: 30px; }
+  .escena b { font-size: 15.5px; }
+  .caras { display: flex; margin-top: 4px; }
+  .caras .avatar { width: 30px; height: 30px; font-size: 15px; margin-right: -6px; border-width: 1.5px; }
+  .controles { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin: 4px 0 14px; }
+  .chat { display: flex; flex-direction: column; gap: 10px; max-width: 640px; margin: 0 auto; }
+  .linea { display: flex; gap: 10px; align-items: flex-end; cursor: pointer; }
+  .linea.dcha { flex-direction: row-reverse; }
+  .linea .avatar { width: 36px; height: 36px; font-size: 18px; }
+  .globo { max-width: 78%; padding: 10px 14px; border-radius: 18px 18px 18px 6px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.18); transition: transform .2s, background .2s; }
+  .linea.dcha .globo { border-radius: 18px 18px 6px 18px; }
+  .globo .n { font-size: 11px; font-weight: 700; color: var(--suave); text-transform: uppercase; letter-spacing: .04em; }
+  .globo .j { font-size: 18px; font-weight: 700; line-height: 1.35; }
+  .globo .k { font-size: 12.5px; color: var(--suave); }
+  .globo .e { font-size: 13.5px; margin-top: 3px; }
+  .sin-es .globo .e { filter: blur(6px); }
+  .linea.sonando .globo { background: rgba(255,214,10,.28); border-color: rgba(255,214,10,.8); transform: scale(1.02); }
+  .linea.tu-turno .globo { background: rgba(48,209,88,.3); border-color: #30d158; }
+  .linea.tapada .j, .linea.tapada .k { filter: blur(8px); }
+
+  /* Ruta */
+  .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .resumen { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .dato { border-radius: 16px; padding: 10px 12px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); }
+  .dato b { font-size: 20px; display: block; } .dato small { font-size: 11.5px; color: var(--suave); }
+  .parada { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 16px; }
+  .parada:nth-child(odd) { background: rgba(255,255,255,.05); }
+  .parada .num { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 13px; color: #111; text-shadow: none; flex: none; }
+  .parada .txt { flex: 1; min-width: 0; } .parada .txt b { display: block; font-size: 14px; } .parada small { color: var(--suave); font-size: 12px; }
+  .parada button { border: 1px solid var(--borde); background: rgba(255,255,255,.1); border-radius: 50%; width: 32px; height: 32px; cursor: pointer; flex: none; }
+  .tramo { font-size: 11.5px; color: var(--suave); padding: 0 0 0 46px; }
+  .enlaces { display: grid; gap: 8px; margin-top: 12px; }
+
+  /* Tiempo en la ficha */
+  .tiempo { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .tiempo .grande { font-size: 40px; line-height: 1; }
+  .tiempo .temp { font-size: 26px; font-weight: 800; }
+  .fuji-hoy { margin-top: 8px; padding: 8px 12px; border-radius: 14px; font-size: 13.5px; background: rgba(255,255,255,.08); }
+
   @media (hover: none) { .chip:hover, .tarjeta:hover, .modo:hover, .opcion:hover, .sello:hover, #dock button:hover { transform: none; } }
 
   /* ---------- Teléfono ---------- */
@@ -315,7 +364,9 @@
     .marcador { width: 100%; justify-content: space-between; }
     .sellos { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
     .hanko { width: 66px; height: 66px; font-size: 24px; }
-    .pjs { grid-template-columns: 1fr; }
+    .pjs, .escenas { grid-template-columns: 1fr; }
+    .globo { max-width: 84%; } .globo .j { font-size: 17px; }
+    .resumen .dato b { font-size: 17px; }
     #bocadillo { bottom: calc(var(--dock-h) + 10px); }
     #aviso { top: var(--arriba); max-width: calc(100vw - 24px); }
   }
@@ -343,8 +394,9 @@
 
 <section class="hoja cristal" id="hoja-palabras">
   <header>
-    <div><h1>📖 Palabras para acampar</h1><p class="sub" id="palabras-sub"></p></div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap">
+    <div><h1 id="palabras-titulo">📖 Palabras para acampar</h1><p class="sub" id="palabras-sub"></p>
+      <div class="segmentos" id="seg-palabras"><button data-s="palabras" class="activo">📖 Palabras</button><button data-s="dialogos">💬 Diálogos</button></div></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap" id="palabras-botones">
       <button class="chip" id="modo-tarjeta">🙈 Ocultar significado</button>
       <button class="chip" id="solo-estrella">⭐ Solo aprendidas</button>
     </div>
@@ -359,8 +411,10 @@
 </section>
 
 <section class="hoja cristal" id="hoja-mochila">
-  <header><div><h1>🎒 Mochila de campista</h1><p class="sub" id="mochila-sub"></p></div><button class="chip" id="vaciar">🔄 Empezar de nuevo</button></header>
-  <div style="padding:0 24px 10px"><div class="progreso"><i id="mochila-barra"></i></div></div>
+  <header><div><h1 id="viaje-titulo">🧭 Mi ruta 聖地巡礼</h1><p class="sub" id="mochila-sub"></p>
+      <div class="segmentos" id="seg-viaje"><button data-s="ruta" class="activo">🧭 Ruta</button><button data-s="mochila">🎒 Mochila</button></div></div>
+    <button class="chip" id="vaciar">🔄 Empezar de nuevo</button></header>
+  <div style="padding:0 24px 10px" id="mochila-progreso"><div class="progreso"><i id="mochila-barra"></i></div></div>
   <div class="contenido fino" id="mochila"></div>
 </section>
 
@@ -379,7 +433,7 @@
   <button data-vista="mapa" class="activo"><span>🗺️</span>Mapa</button>
   <button data-vista="palabras"><span>📖</span>Palabras</button>
   <button data-vista="quiz"><span>🎯</span>Quiz</button>
-  <button data-vista="mochila"><span>🎒</span>Mochila</button>
+  <button data-vista="mochila"><span>🧭</span>Viaje</button>
   <button data-vista="personajes"><span>👥</span>Voces</button>
   <button data-vista="pasaporte"><span>🏅</span>Sellos</button>
 </nav>
@@ -389,7 +443,7 @@
 <div id="bocadillo" class="cristal" aria-live="polite"></div>
 
 <script>
-if (typeof CAMPINGS === 'undefined' || typeof VOCABULARIO === 'undefined' || typeof Voz === 'undefined' || typeof L === 'undefined') {
+if (typeof CAMPINGS === 'undefined' || typeof VOCABULARIO === 'undefined' || typeof Voz === 'undefined' || typeof DIALOGOS === 'undefined' || typeof L === 'undefined') {
   document.body.innerHTML = '<p style="padding:40px">No se pudieron cargar los datos o el mapa (¿sin conexión?).</p>';
   throw new Error('Faltan campings.js, vocabulario.js, voces.js o Leaflet');
 }
@@ -440,8 +494,9 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 function hablar(texto, quien) { Voz.decir(texto, quien); }
 let temporizadorBocadillo;
 Voz.alHablar = ({ texto, quien, traduccion }) => {
-  const p = PERSONAJES[quien], f = FICHAS_PJ[quien], b = $('#bocadillo');
-  if (!p) return;
+  const p = PERSONAJES[quien] || VOCES_EXTRA[quien], f = VOZ_DE(quien), b = $('#bocadillo');
+  // En los diálogos el propio chat ya enseña quién habla
+  if (!p || ($('#hoja-palabras').classList.contains('abierta') && seccionPalabras === 'dialogos')) return;
   b.innerHTML = `<div class="avatar" style="background:${f.color}">${p.emoji}</div>
     <div><div class="quien">${esc(p.nombre)} · <span class="jp">${esc(p.ja)}</span></div><div class="dice jp">${esc(texto)}</div>${traduccion ? `<div class="trad">${esc(traduccion)}</div>` : ''}</div>`;
   b.classList.add('visible', 'hablando');
@@ -603,6 +658,7 @@ function abrirFicha(i) {
       <div class="bloque"><h4>💡 Lo que aprenden</h4><p>${esc(c.leccion)}</p></div>
       ${c.comida !== '—' ? `<div class="bloque"><h4>🍲 Qué comen</h4><p class="jp">${esc(c.comida)}</p></div>` : ''}
       <div class="bloque"><h4>🧭 El sitio real</h4><p>${esc(c.real)}</p></div>
+      <div class="bloque" id="f-tiempo"><h4>🌤️ Tiempo ahora allí · 天気</h4><p class="sub">Consultando el tiempo…</p></div>
       <div class="bloque palabra-sitio"><div class="kanji jp">${esc(pk)}</div>
         <div style="flex:1"><h4>🈁 Palabra de este camping</h4><p><b class="jp">${esc(pkana)}</b> — ${esc(pes)}</p></div>
         <button class="hablar" data-decir="${esc(pkana)}">🔊</button></div>
@@ -611,6 +667,7 @@ function abrirFicha(i) {
         : (c.fotos.length ? '' : '<p class="sub">Sale en la película; el mapa de fans no tiene capturas de este sitio.</p>')}
       <div class="acciones">
         <button class="boton grande ${visitados.has(i) ? 'hecho' : ''}" id="f-visto">${visitados.has(i) ? '💮 ¡Sellado! Estuviste aquí' : '📍 Estuve aquí — sellar pasaporte'}</button>
+        <button class="boton grande" id="f-ruta">${ruta.includes(i) ? '✓ En tu ruta (tocar para quitar)' : '➕ Añadir a mi ruta'}</button>
         <a class="boton" href="https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}" target="_blank" rel="noopener">🗺️ Google Maps</a>
         <a class="boton" href="https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}" target="_blank" rel="noopener">🚗 Cómo llegar</a>
       </div>
@@ -619,6 +676,8 @@ function abrirFicha(i) {
   $('#ficha').classList.add('abierta');
   $('#f-cerrar').onclick = cerrarFicha;
   $('#f-visto').onclick = () => alternarVisita(i);
+  $('#f-ruta').onclick = () => { alternarRuta(i); $('#f-ruta').textContent = ruta.includes(i) ? '✓ En tu ruta (tocar para quitar)' : '➕ Añadir a mi ruta'; };
+  pintarTiempo(i);
   const anfitriona = c.quien[Math.floor(Math.random() * c.quien.length)];
   $('#ficha').querySelectorAll('[data-decir]').forEach(b => b.onclick = () => hablar(b.dataset.decir, anfitriona));
   $('#ficha').querySelectorAll('[data-saluda]').forEach(b => b.onclick = () => Voz.reaccionar(b.dataset.saluda, 'hola'));
@@ -626,6 +685,38 @@ function abrirFicha(i) {
   $('#ficha').querySelectorAll('[data-grande]').forEach(img => img.onclick = () => verGrande(img.src));
   pintarLista(visibles());
   mapa.flyTo([c.lat, c.lng], 14, { duration: 1 });
+}
+/* ================= Tiempo real (Open-Meteo: gratis y sin clave) ================= */
+const cacheTiempo = new Map();
+async function pintarTiempo(i) {
+  const c = CAMPINGS[i];
+  let t = cacheTiempo.get(i);
+  try {
+    if (!t || Date.now() - t.hora > 30 * 60e3) {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lng}&current=temperature_2m,weather_code,wind_speed_10m`
+        + '&hourly=cloud_cover_low,cloud_cover_mid&daily=temperature_2m_min,temperature_2m_max,sunrise&timezone=Asia%2FTokyo&forecast_days=2';
+      const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      t = { datos: await r.json(), hora: Date.now() }; cacheTiempo.set(i, t);
+    }
+  } catch (e) {
+    if (seleccionado === i) $('#f-tiempo').innerHTML = '<h4>🌤️ Tiempo ahora allí · 天気</h4><p class="sub">No he podido consultar el tiempo (¿sin conexión?).</p>';
+    return;
+  }
+  if (seleccionado !== i) return; // el usuario ya abrió otro camping
+  const d = t.datos, [emo, kanji, kana, es] = tiempoDe(d.current.weather_code);
+  // ¿Fuji al amanecer? Nubes bajas y medias a la hora de la salida del sol de mañana
+  const amanecer = d.daily.sunrise[1], hIdx = d.hourly.time.findIndex(h => h >= amanecer.slice(0, 13) + ':00');
+  const nubes = hIdx >= 0 ? Math.max(d.hourly.cloud_cover_low[hIdx], d.hourly.cloud_cover_mid[hIdx]) : null;
+  const fuji = !c.fuji || nubes === null ? '' : `<div class="fuji-hoy">🗻 Mañana al amanecer (${amanecer.slice(11)}):
+    ${nubes < 25 ? '<b>富士山が見える！</b> Muy probable ver el Fuji' : nubes < 60 ? '<b>見えるかも…</b> Quizá se vea el Fuji' : '<b>見えないかも</b> Difícil: muchas nubes'} · nubes ${nubes} %</div>`;
+  $('#f-tiempo').innerHTML = `<h4>🌤️ Tiempo ahora allí · 天気</h4>
+    <div class="tiempo"><div class="grande">${emo}</div><div class="temp">${Math.round(d.current.temperature_2m)} °C</div>
+      <div style="flex:1;min-width:150px"><b class="jp" style="font-size:18px">${kanji}</b> <span class="jp sub">${kana}</span> — ${es}<br>
+      <small class="sub">Esta noche ${Math.round(d.daily.temperature_2m_min[0])} °C · máx. ${Math.round(d.daily.temperature_2m_max[0])} °C · viento ${Math.round(d.current.wind_speed_10m)} km/h</small></div>
+      <button class="hablar" id="f-tiempo-voz">🔊</button></div>${fuji}
+    ${d.daily.temperature_2m_min[0] <= 0 ? '<div class="fuji-hoy">🥶 <b class="jp">氷点下</b> (ひょうてんか): bajo cero esta noche. Saco de invierno y カイロ.</div>' : ''}`;
+  $('#f-tiempo-voz').onclick = () => hablar(`今日は${kanji}、気温は${Math.round(d.current.temperature_2m)}度です`, c.quien[0]);
 }
 function cerrarFicha() {
   $('#ficha').classList.remove('abierta');
@@ -648,8 +739,14 @@ function alternarVisita(i) {
 }
 
 /* ================= Palabras ================= */
-let categoria = 'todas', ocultar = false, soloEstrella = false;
+let categoria = 'todas', ocultar = false, soloEstrella = false, seccionPalabras = 'palabras';
+document.querySelectorAll('#seg-palabras button').forEach(b => b.onclick = () => { seccionPalabras = b.dataset.s; pararEscena(); pintarPalabras(); });
 function pintarPalabras() {
+  const enDialogos = seccionPalabras === 'dialogos';
+  document.querySelectorAll('#seg-palabras button').forEach(b => b.classList.toggle('activo', b.dataset.s === seccionPalabras));
+  $('#cats').style.display = $('#palabras-botones').style.display = enDialogos ? 'none' : '';
+  $('#palabras-titulo').textContent = enDialogos ? '💬 Diálogos de acampada' : '📖 Palabras para acampar';
+  if (enDialogos) return pintarDialogos();
   $('#cats').innerHTML = [['todas', '✨ Todas'], ...VOCABULARIO.map(c => [c.id, `${c.emoji} ${c.titulo}`])]
     .map(([k, v]) => `<button class="chip ${categoria === k ? 'activo' : ''}" data-c="${k}">${v}</button>`).join('');
   document.querySelectorAll('#cats .chip').forEach(b => b.onclick = () => { categoria = b.dataset.c; pintarPalabras(); });
@@ -681,6 +778,68 @@ function pintarPalabras() {
 $('#modo-tarjeta').onclick = e => { ocultar = !ocultar; e.currentTarget.classList.toggle('activo', ocultar); pintarPalabras(); };
 $('#solo-estrella').onclick = e => { soloEstrella = !soloEstrella; e.currentTarget.classList.toggle('activo', soloEstrella); pintarPalabras(); };
 
+/* ================= Diálogos ================= */
+let escena = null, sinEspanol = false, miPapel = null, turnoEscena = 0;
+const hablanteDe = q => PERSONAJES[q] || VOCES_EXTRA[q];
+function caraDe(q) { const h = hablanteDe(q); return `<div class="avatar" style="background:${VOZ_DE(q).color}">${h.emoji}</div>`; }
+function pintarDialogos() {
+  if (!escena) {
+    $('#palabras-sub').textContent = `${DIALOGOS.length} escenas con voz · escucha, repite y haz tú un papel`;
+    $('#palabras').innerHTML = `<div class="escenas">${DIALOGOS.map(d => {
+      const quienes = [...new Set(d.lineas.map(l => l[0]))];
+      return `<button class="escena" data-d="${d.id}"><div class="emo">${d.emoji}</div><b>${esc(d.titulo)}</b>
+        <span class="jp sub">${esc(d.ja)} · ${d.lineas.length} frases</span><div class="caras">${quienes.map(caraDe).join('')}</div></button>`;
+    }).join('')}</div>`;
+    $('#palabras').querySelectorAll('[data-d]').forEach(b => b.onclick = () => { escena = DIALOGOS.find(d => d.id === b.dataset.d); miPapel = null; pintarDialogos(); });
+    return;
+  }
+  const quienes = [...new Set(escena.lineas.map(l => l[0]))];
+  $('#palabras-sub').textContent = `${escena.emoji} ${escena.titulo} · toca una frase para oírla`;
+  $('#palabras').innerHTML = `
+    <div class="controles">
+      <button class="chip" id="d-volver">↩︎ Escenas</button>
+      <button class="chip" id="d-play">▶︎ Escuchar la escena</button>
+      <button class="chip ${sinEspanol ? 'activo' : ''}" id="d-es">🙈 Ocultar español</button>
+      <span class="sub" style="margin-left:4px">🎭 Hazlo tú:</span>
+      ${quienes.map(q => `<button class="chip ${miPapel === q ? 'activo' : ''}" data-papel="${q}">${hablanteDe(q).emoji} ${esc(hablanteDe(q).nombre)}</button>`).join('')}
+    </div>
+    ${miPapel ? `<p class="sub" style="margin-bottom:10px">🎤 Eres ${esc(hablanteDe(miPapel).nombre)}: tus frases salen tapadas y te toca decirlas en voz alta. Después se destapan y la oyes.</p>` : ''}
+    <div class="chat ${sinEspanol ? 'sin-es' : ''}">${escena.lineas.map(([q, ja, kana, es], i) => `
+      <div class="linea ${q === quienes[0] ? '' : 'dcha'} ${miPapel === q ? 'tapada' : ''}" data-l="${i}">${caraDe(q)}
+        <div class="globo"><div class="n">${esc(hablanteDe(q).nombre)}</div><div class="j jp">${esc(ja)}</div>
+        ${kana !== ja ? `<div class="k jp">${esc(kana)}</div>` : ''}<div class="e">${esc(es)}</div></div></div>`).join('')}</div>`;
+  $('#d-volver').onclick = () => { pararEscena(); escena = null; pintarDialogos(); };
+  $('#d-play').onclick = () => turnoEscena ? pararEscena() : reproducirEscena();
+  $('#d-es').onclick = () => { sinEspanol = !sinEspanol; pintarDialogos(); };
+  $('#palabras').querySelectorAll('[data-papel]').forEach(b => b.onclick = () => { pararEscena(); miPapel = miPapel === b.dataset.papel ? null : b.dataset.papel; pintarDialogos(); });
+  $('#palabras').querySelectorAll('[data-l]').forEach(el => el.onclick = () => {
+    const [q, ja, , es] = escena.lineas[+el.dataset.l];
+    el.classList.remove('tapada'); Voz.decir(ja, q, { traduccion: es });
+  });
+}
+function pararEscena() { turnoEscena = 0; Voz.parar(); const b = $('#d-play'); if (b) b.textContent = '▶︎ Escuchar la escena'; }
+async function reproducirEscena() {
+  const yo = turnoEscena = Date.now(); // si cambia, alguien paró la escena
+  $('#d-play').textContent = '⏹ Parar';
+  const filas = [...document.querySelectorAll('.linea')];
+  for (let i = 0; i < escena.lineas.length && turnoEscena === yo; i++) {
+    const [q, ja, , es] = escena.lineas[i], fila = filas[i];
+    fila.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (q === miPapel) {
+      // Tu turno: tiempo para decirla tú, luego se destapa y suena como referencia
+      fila.classList.add('tu-turno');
+      await new Promise(ok => setTimeout(ok, 1800 + ja.length * 180));
+      if (turnoEscena !== yo) break;
+      fila.classList.remove('tu-turno', 'tapada');
+    }
+    fila.classList.add('sonando');
+    await Voz.decir(ja, q, { traduccion: es });
+    fila.classList.remove('sonando');
+    await new Promise(ok => setTimeout(ok, 350));
+  }
+  if (turnoEscena === yo) { pararEscena(); if (miPapel) { confeti(['🎭', '⭐', '💬']); avisar('🎭 ¡Escena completa! Otra vez sin mirar el español'); } }
+}
+
 /* ================= Quiz ================= */
 const MODOS = {
   ja_es:   { emoji: '🈁', titulo: 'Japonés → español', desc: 'Lee la palabra y elige qué significa' },
@@ -690,6 +849,7 @@ const MODOS = {
   quien:   { emoji: '👧', titulo: '¿Quién acampa aquí?', desc: 'Adivina quién acampa en cada sitio' },
   kanji:   { emoji: '⛩️', titulo: 'Lee el camping', desc: 'Elige la lectura correcta del nombre en kanji' },
   frase:   { emoji: '🗣️', titulo: '¿Quién lo diría?', desc: 'Lee la frase y adivina qué personaje habla así' },
+  contesta: { emoji: '💬', titulo: '¿Qué contestas?', desc: 'Te hablan en el camping o en la tienda: elige la respuesta' },
 };
 let partida = null;
 const record = guardado.leer('records', {});
@@ -722,6 +882,18 @@ function preguntaDe(modo) {
     const conKanji = CAMPINGS.filter(c => /[一-龯]/.test(c.ja));
     const bien = conKanji[Math.floor(Math.random() * conKanji.length)];
     return { enunciado: `<div class="grande jp" style="font-size:38px">${esc(bien.ja)}</div>`, ops: distintas(bien, conKanji, c => c.kana).map(c => ({ txt: `<span class="jp">${esc(c.kana)}</span>`, ok: c === bien })), explica: `${bien.nombre} · ${bien.ep}`, decir: bien.kana };
+  }
+  if (modo === 'contesta') {
+    const d = DIALOGOS[Math.floor(Math.random() * DIALOGOS.length)];
+    const huecos = d.lineas.map((l, i) => i).filter(i => i > 0 && d.lineas[i][0] !== d.lineas[i - 1][0]);
+    const i = huecos[Math.floor(Math.random() * huecos.length)], [qa, jaA, , esA] = d.lineas[i - 1], bien = d.lineas[i];
+    const otras = baraja(DIALOGOS.filter(x => x !== d).flatMap(x => x.lineas)).filter((l, j, a) => a.findIndex(y => y[1] === l[1]) === j).slice(0, 3);
+    return { enunciado: `<div class="sub">${d.emoji} ${esc(d.titulo)}</div><div style="display:flex;gap:10px;align-items:center;justify-content:center;margin-top:10px">${caraDe(qa)}
+        <div style="text-align:left"><div class="jp" style="font-size:24px;font-weight:800">${esc(jaA)}</div><div class="sub">${esc(esA)}</div></div></div>
+        <button class="chip" data-repetir style="margin-top:10px">🔊 Otra vez</button>`,
+      alEmpezar: () => Voz.decir(jaA, qa, { traduccion: esA }),
+      ops: baraja([bien, ...otras]).map(l => ({ txt: `<span class="jp">${esc(l[1])}</span>`, ok: l === bien })),
+      explica: `${bien[1]} — ${bien[3]}`, decir: bien[1], quien: bien[0] };
   }
   if (modo === 'frase') {
     const quien = baraja(Object.keys(FICHAS_PJ))[0];
@@ -783,8 +955,107 @@ function finQuiz() {
   $('#otra').onclick = () => empezarQuiz(p.modo); $('#menu').onclick = pintarMenuQuiz;
 }
 
+/* ================= Viaje: ruta de peregrinación ================= */
+let seccionViaje = 'ruta';
+const ruta = guardado.leer('ruta', []).filter(i => CAMPINGS[i]);
+const guardarRuta = () => { guardado.escribir('ruta', ruta); dibujarRuta(); };
+document.querySelectorAll('#seg-viaje button').forEach(b => b.onclick = () => { seccionViaje = b.dataset.s; pintarMochila(); });
+const lineaRuta = L.polyline([], { color: '#ffd60a', weight: 4, dashArray: '8 10', opacity: .95 });
+function dibujarRuta() {
+  lineaRuta.setLatLngs(ruta.map(i => [CAMPINGS[i].lat, CAMPINGS[i].lng]));
+  ruta.length > 1 ? lineaRuta.addTo(mapa) : mapa.removeLayer(lineaRuta);
+}
+function alternarRuta(i) {
+  const k = ruta.indexOf(i);
+  k >= 0 ? ruta.splice(k, 1) : ruta.push(i);
+  guardarRuta();
+  avisar(k >= 0 ? `Quitado de tu ruta: ${CAMPINGS[i].nombre}` : `🧭 Añadido a tu ruta (${ruta.length} paradas)`);
+}
+const puntoDe = i => [CAMPINGS[i].lat, CAMPINGS[i].lng];
+function largoRuta(orden, inicio) {
+  let d = 0, prev = inicio;
+  for (const i of orden) { if (prev) d += km(prev, puntoDe(i)); prev = puntoDe(i); }
+  return d;
+}
+// Vecino más cercano y después 2-opt: con ≤21 paradas da una ruta muy buena al instante
+function ordenarRuta() {
+  if (ruta.length < 3 && !miPosicion) return;
+  const quedan = [...ruta], orden = [];
+  let prev = miPosicion || puntoDe(quedan[0]);
+  while (quedan.length) {
+    quedan.sort((a, b) => km(prev, puntoDe(a)) - km(prev, puntoDe(b)));
+    const i = quedan.shift(); orden.push(i); prev = puntoDe(i);
+  }
+  for (let mejora = true; mejora;) {
+    mejora = false;
+    for (let a = 0; a < orden.length - 1; a++) for (let b = a + 1; b < orden.length; b++) {
+      const prueba = [...orden.slice(0, a), ...orden.slice(a, b + 1).reverse(), ...orden.slice(b + 1)];
+      if (largoRuta(prueba, miPosicion) < largoRuta(orden, miPosicion) - .01) { orden.splice(0, orden.length, ...prueba); mejora = true; }
+    }
+  }
+  ruta.splice(0, ruta.length, ...orden); guardarRuta();
+}
+const PRESETS = [
+  ['🛵 Viaje de Rin', () => CAMPINGS.map((c, i) => i).filter(i => CAMPINGS[i].quien.includes('rin'))],
+  ['🍙 Viaje de Nadeshiko', () => CAMPINGS.map((c, i) => i).filter(i => CAMPINGS[i].quien.includes('nadeshiko'))],
+  ['🗻 Solo con Fuji', () => CAMPINGS.map((c, i) => i).filter(i => CAMPINGS[i].fuji)],
+  ['🟠 Temporada 1', () => CAMPINGS.map((c, i) => i).filter(i => CAMPINGS[i].temporada === 'T1')],
+  ['🎯 Los que me faltan', () => CAMPINGS.map((c, i) => i).filter(i => !visitados.has(i))],
+];
+function enlacesMaps() {
+  // Google Maps admite origen + destino + 9 paradas intermedias por enlace: se parte en tramos de 11
+  const tramos = [];
+  for (let a = 0; a < ruta.length - 1; a += 10) tramos.push(ruta.slice(a, a + 11));
+  return tramos.map((t, n) => {
+    const pts = t.map(i => `${CAMPINGS[i].lat},${CAMPINGS[i].lng}`);
+    const url = `https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=${pts[0]}&destination=${pts.at(-1)}` + (pts.length > 2 ? `&waypoints=${encodeURIComponent(pts.slice(1, -1).join('|'))}` : '');
+    return `<a class="boton" href="${url}" target="_blank" rel="noopener">🚗 ${tramos.length > 1 ? `Tramo ${n + 1}: ` : 'Abrir en Google Maps: '}${esc(CAMPINGS[t[0]].nombre)} → ${esc(CAMPINGS[t.at(-1)].nombre)}</a>`;
+  }).join('');
+}
+function pintarRuta() {
+  $('#mochila-progreso').style.display = 'none';
+  const total = largoRuta(ruta, null), carretera = total * 1.35;
+  $('#mochila-sub').textContent = ruta.length ? `${ruta.length} paradas · añade más desde la ficha de cada camping` : 'Elige una ruta del anime o añade campings desde su ficha';
+  $('#mochila').innerHTML = `
+    <div class="presets">${PRESETS.map(([t], n) => `<button class="chip" data-preset="${n}">${t}</button>`).join('')}</div>
+    ${ruta.length ? `
+      <div class="resumen">
+        <div class="dato"><b>${ruta.length}</b><small>paradas</small></div>
+        <div class="dato"><b>≈${Math.round(carretera)} km</b><small>por carretera (estimado)</small></div>
+        <div class="dato"><b>≈${Math.max(1, Math.round(carretera / 45))} h</b><small>al volante, sin paradas</small></div>
+      </div>
+      <div class="controles"><button class="chip" id="r-ordenar">🔀 Ordenar por el camino más corto${miPosicion ? ' desde aquí' : ''}</button>
+        <button class="chip" id="r-mapa">🗺️ Verla en el mapa</button></div>
+      <div>${ruta.map((i, n) => {
+        const c = CAMPINGS[i], sig = ruta[n + 1];
+        return `<div class="parada"><div class="num" style="background:${COLORES[c.temporada]}">${n + 1}</div>
+          <div class="txt"><b>${esc(c.nombre)} ${visitados.has(i) ? '💮' : ''}</b><small class="jp">${esc(c.ja)} · ${esc(c.ep)}</small></div>
+          <button data-sube="${n}" ${n ? '' : 'disabled style="opacity:.3"'} aria-label="Subir">↑</button><button data-quita="${n}" aria-label="Quitar">✕</button></div>
+          ${sig !== undefined ? `<div class="tramo">↓ ${Math.round(km(puntoDe(i), puntoDe(sig)) * 1.35)} km aprox.</div>` : ''}`;
+      }).join('')}</div>
+      ${ruta.length > 1 ? `<div class="enlaces">${enlacesMaps()}</div>` : ''}
+      <p class="sub" style="margin-top:12px">Los km salen de la distancia en línea recta × 1,35. Google Maps te dará el tiempo real, peajes incluidos.</p>`
+    : '<div class="vacia">🧭 Aún no hay paradas.<br>Pulsa una ruta de arriba o «➕ Añadir a mi ruta» en un camping.</div>'}`;
+  $('#mochila').querySelectorAll('[data-preset]').forEach(b => b.onclick = () => {
+    ruta.splice(0, ruta.length, ...PRESETS[+b.dataset.preset][1]()); ordenarRuta(); guardarRuta(); pintarRuta();
+    Voz.reaccionar(b.dataset.preset === '1' ? 'nadeshiko' : b.dataset.preset === '0' ? 'rin' : 'chiaki', 'hola');
+  });
+  $('#mochila').querySelectorAll('[data-quita]').forEach(b => b.onclick = () => { ruta.splice(+b.dataset.quita, 1); guardarRuta(); pintarRuta(); });
+  $('#mochila').querySelectorAll('[data-sube]').forEach(b => b.onclick = () => { const n = +b.dataset.sube; [ruta[n - 1], ruta[n]] = [ruta[n], ruta[n - 1]]; guardarRuta(); pintarRuta(); });
+  const ord = $('#r-ordenar'); if (ord) ord.onclick = () => { ordenarRuta(); pintarRuta(); avisar('🔀 Ruta ordenada'); };
+  const ver = $('#r-mapa'); if (ver) ver.onclick = () => { irA('mapa'); mapa.flyToBounds(ruta.map(puntoDe), { padding: [50, 50], paddingBottomRight: [50, esMovil() ? 300 : 120], maxZoom: 12, duration: .8 }); };
+}
+$('#vaciar').onclick = () => {
+  if (seccionViaje === 'ruta') { ruta.length = 0; guardarRuta(); return pintarRuta(); }
+  mochila.clear(); guardado.escribir('mochila', []); pintarMochila();
+};
+
 /* ================= Mochila ================= */
 function pintarMochila() {
+  document.querySelectorAll('#seg-viaje button').forEach(b => b.classList.toggle('activo', b.dataset.s === seccionViaje));
+  $('#viaje-titulo').textContent = seccionViaje === 'ruta' ? '🧭 Mi ruta 聖地巡礼' : '🎒 Mochila de campista';
+  if (seccionViaje === 'ruta') return pintarRuta();
+  $('#mochila-progreso').style.display = '';
   const total = MOCHILA.reduce((n, s) => n + s.cosas.length, 0);
   const hechas = MOCHILA.flatMap(s => s.cosas.map(c => c[0])).filter(w => mochila.has(w)).length;
   $('#mochila-sub').textContent = hechas === total ? '✅ ¡Todo listo! Rin aprobaría esta mochila' : `${hechas} de ${total} cosas · toca cada una al meterla (y oye cómo se dice)`;
@@ -800,7 +1071,6 @@ function pintarMochila() {
     if (!estaba && mochila.size === total) { confeti(['🎒', '⛺', '✅']); avisar('🎒 ¡Mochila completa! A la montaña'); }
   });
 }
-$('#vaciar').onclick = () => { mochila.clear(); guardado.escribir('mochila', []); pintarMochila(); };
 
 /* ================= Pasaporte ================= */
 function rangoActual() { return RANGOS.filter(([n]) => visitados.size >= n).pop()[1]; }
@@ -968,6 +1238,7 @@ const esMovil = () => matchMedia('(max-width: 820px)').matches;
 
 /* ================= Navegación del dock ================= */
 function irA(vista) {
+  pararEscena();
   document.querySelectorAll('#dock button').forEach(b => b.classList.toggle('activo', b.dataset.vista === vista));
   document.querySelectorAll('.hoja').forEach(h => h.classList.toggle('abierta', h.id === 'hoja-' + vista));
   const enMapa = vista === 'mapa';
@@ -987,6 +1258,7 @@ visor.onclick = () => visor.classList.remove('abierto');
 addEventListener('keydown', e => { if (e.key === 'Escape') { visor.classList.contains('abierto') ? visor.classList.remove('abierto') : cerrarFicha(); } });
 
 actualizarMapa(true);
+dibujarRuta();
 Voz.detectarVoicevox();
 </script>
 </body>

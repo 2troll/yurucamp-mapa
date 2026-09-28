@@ -78,7 +78,14 @@ const FICHAS_PJ = {
     },
   },
 };
+// Voces que no son del grupo: el personal de campings, tiendas y gasolineras
+const VOCES_EXTRA = {
+  staff: { emoji: '🧑‍💼', nombre: 'Personal', ja: 'スタッフ', color: '#8e9aaf', tono: .9, vel: .95,
+    vv: [['玄野武宏', 'ノーマル'], ['青山龍星', 'ノーマル']], vvTono: 0, vvVel: 1 },
+};
+const VOZ_DE = q => FICHAS_PJ[q] || VOCES_EXTRA[q] || FICHAS_PJ.nadeshiko;
 const VOCES_SISTEMA = {
+  staff: ['Otoya', 'Eddy', 'Reed'],
   rin: ['Kyoko', 'O-Ren', 'Google'], nadeshiko: ['Flo', 'Sandy', 'Google'], chiaki: ['Sandy', 'Shelley', 'Google'],
   aoi: ['Shelley', 'Kyoko'], ena: ['Google', 'Flo'], ayano: ['Sandy', 'Flo'], sakura: ['Kyoko', 'Shelley'], toba: ['Shelley', 'Kyoko'],
 };
@@ -103,7 +110,7 @@ const Voz = (() => {
   if ('speechSynthesis' in window) { cargarVoces(); speechSynthesis.addEventListener?.('voiceschanged', cargarVoces); }
 
   function perfil(quien) {
-    const base = FICHAS_PJ[quien] || FICHAS_PJ.nadeshiko, a = ajustes[quien] || {};
+    const base = VOZ_DE(quien), a = ajustes[quien] || {};
     return { tono: a.tono ?? base.tono, vel: a.vel ?? base.vel };
   }
   function hablarNavegador(texto, quien) {
@@ -114,7 +121,12 @@ const Voz = (() => {
     // Una voz del sistema distinta para cada chica si existe (macOS/iOS traen Kyoko, Flo, Sandy, Shelley…)
     const pref = (VOCES_SISTEMA[quien] || []).map(n => vocesJa.find(v => v.name.startsWith(n))).find(Boolean);
     if (pref || vocesJa.length) u.voice = pref || vocesJa[0];
-    speechSynthesis.speak(u);
+    // Termina al acabar la frase; el plazo cubre el fallo de Chrome que a veces no avisa del final
+    return new Promise(ok => {
+      const fin = setTimeout(ok, 2500 + texto.length * 250 / p.vel);
+      u.onend = u.onerror = () => { clearTimeout(fin); ok(); };
+      speechSynthesis.speak(u);
+    });
   }
 
   // ---------- VOICEVOX ----------
@@ -124,7 +136,7 @@ const Voz = (() => {
       if (!r.ok) throw 0;
       const lista = await r.json();
       const buscar = (nombre, estilo) => lista.find(s => s.name === nombre)?.styles.find(st => st.name === estilo);
-      for (const [quien, f] of Object.entries(FICHAS_PJ)) {
+      for (const [quien, f] of Object.entries({ ...FICHAS_PJ, ...VOCES_EXTRA })) {
         for (const [nombre, estiloNombre] of f.vv) {
           const st = buscar(nombre, estiloNombre);
           if (st) { estado.hablantes[quien] = { id: st.id, nombre }; break; }
@@ -137,7 +149,7 @@ const Voz = (() => {
     return estado.voicevox;
   }
   async function audioVoicevox(texto, quien) {
-    const h = estado.hablantes[quien] || estado.hablantes.nadeshiko, f = FICHAS_PJ[quien] || FICHAS_PJ.nadeshiko, a = ajustes[quien] || {};
+    const h = estado.hablantes[quien] || estado.hablantes.nadeshiko, f = VOZ_DE(quien), a = ajustes[quien] || {};
     const clave = `${h.id}|${texto}|${a.tono ?? ''}|${a.vel ?? ''}`;
     if (cacheAudio.has(clave)) return cacheAudio.get(clave);
     const q = await (await fetch(`${VV}/audio_query?speaker=${h.id}&text=${encodeURIComponent(texto)}`, { method: 'POST' })).json();
@@ -169,10 +181,12 @@ const Voz = (() => {
     claves: () => op('readonly', s => s.getAllKeys()),
   };
 
-  function tocar(url) {
+  // Empieza a sonar (si falla, lanza el error) y devuelve una promesa que se cumple al acabar o al cortarse
+  async function tocar(url) {
     if (audioActual) audioActual.pause();
-    audioActual = new Audio(url);
-    return audioActual.play();
+    const a = audioActual = new Audio(url);
+    await a.play();
+    return new Promise(ok => { a.onended = a.onpause = ok; });
   }
   function parar() { if (audioActual) audioActual.pause(); if ('speechSynthesis' in window) speechSynthesis.cancel(); }
 
@@ -187,7 +201,7 @@ const Voz = (() => {
       }
       if (estado.voicevox) return await tocar(await audioVoicevox(texto, quien));
     } catch (e) { console.warn('[voces] se usa la voz del navegador:', e); }
-    hablarNavegador(texto, quien);
+    return hablarNavegador(texto, quien);
   }
   // Una frase al azar del personaje para ese momento
   function reaccionar(quien, momento) {
