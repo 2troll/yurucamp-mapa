@@ -6,8 +6,9 @@
 <title>Yuru Camp△ Japón</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="campings.js?v=3"></script>
-<script src="vocabulario.js?v=3"></script>
+<script src="campings.js?v=4"></script>
+<script src="vocabulario.js?v=4"></script>
+<script src="voces.js?v=5"></script>
 <style>
   :root {
     --borde: rgba(255,255,255,.38);
@@ -82,7 +83,8 @@
   .portada .titulo { position: absolute; left: 20px; right: 20px; bottom: 14px; z-index: 1; }
   .portada h2 { font-size: 28px; font-weight: 800; letter-spacing: -.02em; }
   .portada .sinfoto { width: 100%; height: 100%; font-size: 64px; border-radius: 0; }
-  .cerrar { position: absolute; top: 14px; right: 14px; z-index: 2; width: 34px; height: 34px; border-radius: 50%;
+  /* Pegajoso para que siga a mano al bajar por la ficha */
+  .cerrar { position: sticky; top: 12px; display: block; margin: 12px 12px -48px auto; z-index: 5; width: 36px; height: 36px; border-radius: 50%;
     border: 1px solid var(--borde); background: rgba(0,0,0,.35); backdrop-filter: blur(10px); font-size: 15px; cursor: pointer; }
   .cuerpo { padding: 16px 20px 22px; display: flex; flex-direction: column; gap: 14px; }
   ruby { ruby-position: over; } rt { font-size: 11px; color: var(--suave); }
@@ -200,26 +202,137 @@
   .confeti { position: fixed; z-index: 3500; pointer-events: none; font-size: 26px; animation: caer 1.4s ease-out forwards; }
   @keyframes caer { to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; } }
 
+  /* ---------- Asa y filtros plegables (se usan en el móvil) ---------- */
+  .asa { display: none; }
+  #ver-filtros { display: none; }
+
+  /* ---------- Bocadillo: quién está hablando ---------- */
+  #bocadillo { position: fixed; left: 50%; bottom: calc(var(--dock-h, 86px) + 14px); z-index: 2500; display: flex; gap: 12px; align-items: center;
+    width: max-content; max-width: min(520px, calc(100vw - 24px)); padding: 10px 16px 10px 10px; border-radius: 22px;
+    transform: translate(-50%, 20px) scale(.9); opacity: 0; pointer-events: none; transition: opacity .3s, transform .4s cubic-bezier(.2,.9,.3,1.3); }
+  #bocadillo.visible { transform: translate(-50%, 0) scale(1); opacity: 1; }
+  .avatar { width: 46px; height: 46px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 24px;
+    border: 2px solid rgba(255,255,255,.9); box-shadow: 0 4px 12px rgba(0,0,0,.35); position: relative; }
+  #bocadillo.hablando .avatar { animation: latido .5s ease-in-out infinite alternate; }
+  @keyframes latido { to { transform: scale(1.08) rotate(-4deg); } }
+  #bocadillo .quien { font-size: 11px; font-weight: 700; color: var(--suave); text-transform: uppercase; letter-spacing: .05em; }
+  #bocadillo .dice { font-size: 17px; font-weight: 700; line-height: 1.3; }
+  #bocadillo .trad { font-size: 13px; color: var(--suave); }
+
+  /* ---------- Personajes ---------- */
+  .motor { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 12px 14px; border-radius: 18px; margin-bottom: 14px;
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16); font-size: 13.5px; line-height: 1.45; }
+  .motor b { font-size: 14px; }
+  .luz { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; background: #ff9f0a; box-shadow: 0 0 10px #ff9f0a; }
+  .luz.si { background: #30d158; box-shadow: 0 0 10px #30d158; }
+  .pjs { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+  .pj { border-radius: 22px; padding: 14px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16); display: flex; flex-direction: column; gap: 10px; }
+  .pj.guia { border-color: rgba(255,214,10,.8); box-shadow: 0 0 0 1px rgba(255,214,10,.5) inset; }
+  .pj-cab { display: flex; gap: 12px; align-items: center; }
+  .pj-cab b { font-size: 17px; display: block; }
+  .pj p { font-size: 13.5px; line-height: 1.4; color: rgba(255,255,255,.88); }
+  .pj .botones { display: flex; gap: 6px; flex-wrap: wrap; }
+  .deslizador { display: grid; grid-template-columns: 70px 1fr 34px; align-items: center; gap: 8px; font-size: 12px; color: var(--suave); }
+  .deslizador input { width: 100%; accent-color: #ffd60a; }
+  .clips { display: grid; gap: 6px; }
+  .clip { display: flex; align-items: center; gap: 6px; font-size: 12.5px; }
+  .clip span { flex: 1; color: var(--suave); }
+  .clip button, .clip label { border: 1px solid var(--borde); background: rgba(255,255,255,.12); border-radius: 999px; min-width: 34px; height: 34px; padding: 0 10px;
+    cursor: pointer; font-size: 14px; display: grid; place-items: center; }
+  .clip .si { background: rgba(48,209,88,.4); border-color: #30d158; }
+  .clip .grabando { background: var(--rojo); animation: latido .6s infinite alternate; }
+  details.plegable summary { cursor: pointer; font-size: 12.5px; color: var(--suave); padding: 4px 0; list-style: none; }
+  details.plegable summary::-webkit-details-marker { display: none; }
+  details.plegable[open] summary { margin-bottom: 8px; }
+  .creditos { margin-top: 18px; font-size: 11.5px; color: var(--suave); line-height: 1.5; }
+
+  /* Hoguera */
+  #hoguera { position: fixed; top: 16px; right: 150px; z-index: 900; border-radius: 999px; padding: 10px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  #hoguera.activo { background: linear-gradient(135deg, rgba(255,120,30,.7), rgba(255,69,58,.5)); }
+
+  @media (hover: none) { .chip:hover, .tarjeta:hover, .modo:hover, .opcion:hover, .sello:hover, #dock button:hover { transform: none; } }
+
+  /* ---------- Teléfono ---------- */
   @media (max-width: 820px) {
-    #panel { top: auto; left: 10px; right: 10px; bottom: 92px; width: auto; height: 46vh; }
-    #ficha { left: 10px; right: 10px; top: 10px; bottom: 92px; width: auto; z-index: 1100; transform: translateY(calc(100% + 120px)); }
-    .hoja { top: 10px; bottom: 92px; }
-    #dock { bottom: 10px; }
-    #dock button { padding: 8px 9px; }
+    :root { --dock-h: calc(66px + env(safe-area-inset-bottom)); --arriba: calc(env(safe-area-inset-top) + 8px); --radio: 24px; }
+    html, body { height: 100dvh; }
+    h1 { font-size: 20px; }
+
+    #dock { left: 0; right: 0; bottom: 0; transform: none; border-radius: 22px 22px 0 0; border-bottom: 0; gap: 0;
+      display: grid; grid-template-columns: repeat(6, 1fr); padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); }
+    #dock button { padding: 6px 0; font-size: 10px; border-radius: 14px; min-height: 52px; justify-content: center; }
+    #dock button span { font-size: 21px; }
+
+    #capa, #hoguera { top: var(--arriba); padding: 8px 12px; font-size: 12px; }
+    #capa { right: 10px; } #hoguera { right: auto; left: 10px; }
+
+    /* El panel es una hoja que se arrastra: mini (solo buscador), medio y lleno */
+    #panel { top: auto; left: 0; right: 0; bottom: var(--dock-h); width: auto; border-radius: 24px 24px 0 0; border-bottom: 0;
+      height: 196px; transition: height .35s cubic-bezier(.2,.9,.3,1), opacity .3s; }
+    .asa, #panel header { touch-action: none; }
+    #panel.medio { height: 52dvh; }
+    #panel.lleno { height: calc(100dvh - var(--dock-h) - var(--arriba) - 48px); }
+    #panel.arrastrando { transition: none; }
+    .asa { display: block; width: 100%; padding: 8px 0 2px; cursor: grab; border: 0; background: none; }
+    .asa::before { content: ''; display: block; width: 42px; height: 5px; border-radius: 9px; background: rgba(255,255,255,.55); margin: 0 auto; }
+    #panel header { padding: 4px 16px 8px; }
+    #panel h1 { font-size: 18px; }
+    .fila-buscar { display: flex; gap: 8px; margin-top: 10px; }
+    #buscar { margin-top: 0; padding: 11px 14px; font-size: 16px; } /* 16px evita el zoom automático de iOS */
+    #ver-filtros { display: block; flex: none; }
+    #filtros { display: none; padding: 0 16px 6px; max-height: none; }
+    #panel.con-filtros #filtros { display: flex; }
+    .fila-orden { padding: 4px 16px 6px; }
+    #lista { padding: 2px 8px 12px; }
+    .item { padding: 8px; min-height: 60px; }
+    .item img, .item .sinfoto { width: 72px; height: 50px; }
+
+    #ficha { left: 0; right: 0; top: var(--arriba); bottom: 0; width: auto; z-index: 1600; border-radius: 26px 26px 0 0; border-bottom: 0;
+      transform: translateY(calc(100% + 40px)); padding-bottom: env(safe-area-inset-bottom); }
+    .portada { height: 210px; border-radius: 26px 26px 0 0; }
+    .portada h2 { font-size: 24px; }
+    .cerrar { width: 40px; height: 40px; margin-bottom: -52px; font-size: 16px; }
+    .cuerpo { padding: 14px 16px 26px; gap: 12px; }
+    .acciones { grid-template-columns: 1fr; }
+    .boton { padding: 14px; }
+    #galeria img { height: 104px; }
+
+    .hoja { left: 8px; right: 8px; width: auto; top: var(--arriba); bottom: calc(var(--dock-h) + 8px); transform: translateY(24px) scale(.98); }
+    .hoja.abierta { transform: none; }
+    .hoja > header { padding: 16px 16px 10px; }
+    .hoja .contenido { padding: 4px 14px 20px; }
+    .pestañas { padding: 0 14px 10px; }
+    .rejilla { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .tarjeta { min-height: 128px; padding: 12px; border-radius: 18px; }
+    .tarjeta .escritura { font-size: 21px; }
+    .del-dia .kanji { font-size: 30px; }
+    .modos { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .modo { padding: 14px; } .modo .emo { font-size: 28px; } .modo b { font-size: 15px; }
     .opciones { grid-template-columns: 1fr; }
+    .opcion { padding: 15px; min-height: 52px; }
     .pregunta .grande { font-size: 40px; }
+    .pregunta img { max-height: 220px; }
+    .marcador { width: 100%; justify-content: space-between; }
+    .sellos { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+    .hanko { width: 66px; height: 66px; font-size: 24px; }
+    .pjs { grid-template-columns: 1fr; }
+    #bocadillo { bottom: calc(var(--dock-h) + 10px); }
+    #aviso { top: var(--arriba); max-width: calc(100vw - 24px); }
   }
 </style>
 </head>
 <body>
 <div id="mapa"></div>
 <button id="capa" class="cristal">🛰️ Satélite</button>
+<button id="hoguera" class="cristal" title="Sonido de hoguera">🔥 Hoguera</button>
 
 <aside id="panel" class="cristal">
+  <button class="asa" id="asa" aria-label="Subir o bajar la lista"></button>
   <header>
     <h1>⛺ Yuru Camp△ <span class="jp">キャンプ場</span></h1>
     <p class="sub" id="contador"></p>
-    <input id="buscar" type="search" placeholder="🔎 Busca un camping, kanji o personaje…" autocomplete="off">
+    <div class="fila-buscar"><input id="buscar" type="search" placeholder="🔎 Camping, kanji o personaje…" autocomplete="off">
+      <button class="chip" id="ver-filtros">⚙︎ Filtros</button></div>
   </header>
   <div id="filtros" class="fino"></div>
   <div class="fila-orden"><span id="orden-txt">Orden del anime</span><button class="chip" id="cerca">📍 Cerca de mí</button></div>
@@ -257,21 +370,28 @@
   <div class="contenido fino"><div class="sellos" id="sellos"></div></div>
 </section>
 
+<section class="hoja cristal" id="hoja-personajes">
+  <header><div><h1>👥 Personajes y voces</h1><p class="sub">Toca a una para oírla · la que tiene ⭐ lee todas las palabras</p></div></header>
+  <div class="contenido fino" id="personajes"></div>
+</section>
+
 <nav id="dock" class="cristal">
   <button data-vista="mapa" class="activo"><span>🗺️</span>Mapa</button>
   <button data-vista="palabras"><span>📖</span>Palabras</button>
   <button data-vista="quiz"><span>🎯</span>Quiz</button>
   <button data-vista="mochila"><span>🎒</span>Mochila</button>
-  <button data-vista="pasaporte"><span>🏅</span>Pasaporte</button>
+  <button data-vista="personajes"><span>👥</span>Voces</button>
+  <button data-vista="pasaporte"><span>🏅</span>Sellos</button>
 </nav>
 
 <div id="visor"><img alt=""></div>
 <div id="aviso" class="cristal"></div>
+<div id="bocadillo" class="cristal" aria-live="polite"></div>
 
 <script>
-if (typeof CAMPINGS === 'undefined' || typeof VOCABULARIO === 'undefined' || typeof L === 'undefined') {
+if (typeof CAMPINGS === 'undefined' || typeof VOCABULARIO === 'undefined' || typeof Voz === 'undefined' || typeof L === 'undefined') {
   document.body.innerHTML = '<p style="padding:40px">No se pudieron cargar los datos o el mapa (¿sin conexión?).</p>';
-  throw new Error('Faltan campings.js, vocabulario.js o Leaflet');
+  throw new Error('Faltan campings.js, vocabulario.js, voces.js o Leaflet');
 }
 
 /* ================= Datos fijos ================= */
@@ -316,15 +436,19 @@ const mochila = new Set(guardado.leer('mochila', []));
 const $ = s => document.querySelector(s);
 const baraja = a => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-let vozJa = null;
-function cargarVoz() { vozJa = speechSynthesis.getVoices().find(v => v.lang.startsWith('ja')) || null; }
-if ('speechSynthesis' in window) { cargarVoz(); speechSynthesis.onvoiceschanged = cargarVoz; }
-function hablar(texto) {
-  if (!('speechSynthesis' in window)) return avisar('Tu navegador no puede leer en voz alta');
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(texto); u.lang = 'ja-JP'; u.rate = .9; if (vozJa) u.voice = vozJa;
-  speechSynthesis.speak(u);
-}
+// Todo lo que suena en japonés lo dice un personaje; si no se indica cuál, la guía elegida en «Voces»
+function hablar(texto, quien) { Voz.decir(texto, quien); }
+let temporizadorBocadillo;
+Voz.alHablar = ({ texto, quien, traduccion }) => {
+  const p = PERSONAJES[quien], f = FICHAS_PJ[quien], b = $('#bocadillo');
+  if (!p) return;
+  b.innerHTML = `<div class="avatar" style="background:${f.color}">${p.emoji}</div>
+    <div><div class="quien">${esc(p.nombre)} · <span class="jp">${esc(p.ja)}</span></div><div class="dice jp">${esc(texto)}</div>${traduccion ? `<div class="trad">${esc(traduccion)}</div>` : ''}</div>`;
+  b.classList.add('visible', 'hablando');
+  clearTimeout(temporizadorBocadillo);
+  // Visible más o menos lo que dura la frase, y un poco más para leer la traducción
+  temporizadorBocadillo = setTimeout(() => b.classList.remove('visible', 'hablando'), 2600 + texto.length * 160);
+};
 let temporizadorAviso;
 function avisar(txt) { const a = $('#aviso'); a.textContent = txt; a.classList.add('visible'); clearTimeout(temporizadorAviso); temporizadorAviso = setTimeout(() => a.classList.remove('visible'), 2600); }
 function confeti(emojis = ['🎉', '⭐', '🏕️', '🔥', '🗻', '🌸']) {
@@ -432,7 +556,7 @@ function actualizarMapa(encuadrar) {
   if (encuadrar && idx.length) {
     const puntos = idx.map(i => [CAMPINGS[i].lat, CAMPINGS[i].lng]);
     if (miPosicion) puntos.push(miPosicion);
-    mapa.flyToBounds(puntos, { paddingTopLeft: innerWidth > 820 ? [400, 60] : [40, 40], paddingBottomRight: [60, 120], maxZoom: 12, duration: .8 });
+    mapa.flyToBounds(puntos, { paddingTopLeft: esMovil() ? [30, 70] : [400, 60], paddingBottomRight: esMovil() ? [30, $('#panel').offsetHeight + 90] : [60, 120], maxZoom: 12, duration: .8 });
   }
 }
 $('#buscar').oninput = e => { filtro.texto = e.target.value.trim(); actualizarMapa(false); };
@@ -463,12 +587,12 @@ function abrirFicha(i) {
   const dist = miPosicion ? `<span class="etq">📍 a ${Math.round(km(miPosicion, [c.lat, c.lng]))} km de ti</span>` : '';
   const [pk, pkana, pes] = c.palabra;
   $('#ficha').innerHTML = `
-    <div class="portada">${portada}<button class="cerrar" id="f-cerrar" aria-label="Cerrar">✕</button>
+    <button class="cerrar" id="f-cerrar" aria-label="Cerrar">✕</button><div class="portada">${portada}
       <div class="titulo"><div class="etq" style="display:inline-block;background:${COLORES[c.temporada]};border:0;text-shadow:none;color:#111">${esc(c.ep)}</div><h2>${esc(c.nombre)}</h2></div></div>
     <div class="cuerpo">
       <div class="nombre-ja">${ruby(c.ja, c.kana)} <button class="hablar" data-decir="${esc(c.kana)}">🔊 Escuchar</button></div>
       <div class="etiquetas">
-        ${c.quien.map(q => `<span class="etq">${PERSONAJES[q].emoji} ${PERSONAJES[q].nombre} <span class="jp" style="opacity:.7">${PERSONAJES[q].ja}</span></span>`).join('')}
+        ${c.quien.map(q => `<button class="etq" data-saluda="${q}" style="cursor:pointer;border-color:${FICHAS_PJ[q].color}">${PERSONAJES[q].emoji} ${PERSONAJES[q].nombre} <span class="jp" style="opacity:.7">${PERSONAJES[q].ja}</span> 🔊</button>`).join('')}
       </div>
       <div class="etiquetas">
         ${c.paisaje.map(p => `<span class="etq">${PAISAJES[p]}</span>`).join('')}
@@ -495,7 +619,10 @@ function abrirFicha(i) {
   $('#ficha').classList.add('abierta');
   $('#f-cerrar').onclick = cerrarFicha;
   $('#f-visto').onclick = () => alternarVisita(i);
-  $('#ficha').querySelectorAll('[data-decir]').forEach(b => b.onclick = () => hablar(b.dataset.decir));
+  const anfitriona = c.quien[Math.floor(Math.random() * c.quien.length)];
+  $('#ficha').querySelectorAll('[data-decir]').forEach(b => b.onclick = () => hablar(b.dataset.decir, anfitriona));
+  $('#ficha').querySelectorAll('[data-saluda]').forEach(b => b.onclick = () => Voz.reaccionar(b.dataset.saluda, 'hola'));
+  if (Voz.ajustes.saludos !== false && antes !== i) Voz.reaccionar(anfitriona, 'hola');
   $('#ficha').querySelectorAll('[data-grande]').forEach(img => img.onclick = () => verGrande(img.src));
   pintarLista(visibles());
   mapa.flyTo([c.lat, c.lng], 14, { duration: 1 });
@@ -562,6 +689,7 @@ const MODOS = {
   camping: { emoji: '🖼️', titulo: '¿Qué camping es?', desc: 'Mira la captura del anime y adivina el sitio' },
   quien:   { emoji: '👧', titulo: '¿Quién acampa aquí?', desc: 'Adivina quién acampa en cada sitio' },
   kanji:   { emoji: '⛩️', titulo: 'Lee el camping', desc: 'Elige la lectura correcta del nombre en kanji' },
+  frase:   { emoji: '🗣️', titulo: '¿Quién lo diría?', desc: 'Lee la frase y adivina qué personaje habla así' },
 };
 let partida = null;
 const record = guardado.leer('records', {});
@@ -595,6 +723,15 @@ function preguntaDe(modo) {
     const bien = conKanji[Math.floor(Math.random() * conKanji.length)];
     return { enunciado: `<div class="grande jp" style="font-size:38px">${esc(bien.ja)}</div>`, ops: distintas(bien, conKanji, c => c.kana).map(c => ({ txt: `<span class="jp">${esc(c.kana)}</span>`, ok: c === bien })), explica: `${bien.nombre} · ${bien.ep}`, decir: bien.kana };
   }
+  if (modo === 'frase') {
+    const quien = baraja(Object.keys(FICHAS_PJ))[0];
+    const frases = Object.values(FICHAS_PJ[quien].frases).flat();
+    const [ja, es] = frases[Math.floor(Math.random() * frases.length)];
+    const otras = baraja(Object.keys(FICHAS_PJ).filter(q => q !== quien)).slice(0, 3);
+    return { enunciado: `<div class="grande jp" style="font-size:34px">「${esc(ja)}」</div><div class="sub" style="font-size:16px;margin-top:8px">${esc(es)}</div>`,
+      ops: baraja([quien, ...otras]).map(q => ({ txt: `${PERSONAJES[q].emoji} ${PERSONAJES[q].nombre}`, ok: q === quien })),
+      explica: `Lo dice ${PERSONAJES[quien].nombre}: ${FICHAS_PJ[quien].rasgo}`, decir: ja, quien };
+  }
   // quien: un personaje que sí acampa ahí y tres que no
   const bien = CAMPINGS[Math.floor(Math.random() * CAMPINGS.length)];
   const si = bien.quien[Math.floor(Math.random() * bien.quien.length)];
@@ -627,7 +764,7 @@ function siguientePregunta() {
     if (ok) { p.puntos++; p.racha++; if (p.racha % 3 === 0) confeti(['🔥', '⭐']); }
     else { b.classList.add('mal'); p.racha = 0; }
     $('#explica').innerHTML = `${ok ? '✅ ¡Bien!' : '❌ Casi.'} <span class="jp">${esc(q.explica)}</span>`;
-    if (q.decir) hablar(q.decir);
+    if (q.decir) hablar(q.decir, q.quien);
     $('#marcador').innerHTML = `<span>Pregunta <b>${p.n}/10</b></span><span>Aciertos <b>${p.puntos}</b></span><span>🔥 <b>${p.racha}</b></span>`;
     setTimeout(siguientePregunta, ok ? 1500 : 2600);
   });
@@ -638,6 +775,8 @@ function finQuiz() {
   if (nuevo) { record[p.modo] = p.puntos; guardado.escribir('records', record); }
   const frase = p.puntos === 10 ? '👑 ¡Perfecto! Rin estaría orgullosa' : p.puntos >= 7 ? '🏕️ ¡Muy bien, campista!' : p.puntos >= 4 ? '🔥 Vas encendiendo la hoguera' : '🍜 Tómate unos カレーめん y otra vez';
   if (p.puntos >= 7) confeti();
+  // Al acabar, alguien del grupo comenta el resultado
+  setTimeout(() => Voz.reaccionar(baraja(Object.keys(FICHAS_PJ))[0], p.puntos >= 6 ? 'bien' : 'mal'), 300);
   $('#quiz').innerHTML = `<div class="pregunta"><div class="grande">${p.puntos}/10</div><p style="font-size:20px;margin-top:10px">${frase}</p>
     ${nuevo ? '<p class="sub" style="margin-top:6px">🏆 ¡Nuevo récord!</p>' : `<p class="sub">Récord: ${antes}/10</p>`}</div>
     <div class="opciones"><button class="opcion" id="otra">🔁 Otra ronda</button><button class="opcion" id="menu">🎯 Otros juegos</button></div>`;
@@ -676,6 +815,157 @@ function pintarPasaporte() {
   document.querySelectorAll('.sello').forEach(s => s.onclick = () => { irA('mapa'); abrirFicha(+s.dataset.i); });
 }
 
+/* ================= Personajes y voces ================= */
+let grabadora = null;
+async function pintarPersonajes() {
+  const conClip = new Set(await Voz.clips.claves() || []);
+  const vv = Voz.estado.voicevox;
+  $('#personajes').innerHTML = `
+    <div class="motor"><div style="flex:1;min-width:220px"><b><span class="luz ${vv ? 'si' : ''}"></span>${vv ? 'VOICEVOX conectado: voces anime de verdad' : 'Voz del navegador (VOICEVOX apagado)'}</b><br>
+      <span class="sub">${vv ? 'Cada chica tiene su propia voz. Tus clips grabados tienen prioridad.' : 'Cada chica tiene su tono y su ritmo. Enciende VOICEVOX en el Mac para voces anime y pulsa «Buscar».'}</span></div>
+      <button class="chip" id="buscar-vv">🔌 Buscar VOICEVOX</button>
+      <button class="chip ${Voz.ajustes.saludos !== false ? 'activo' : ''}" id="saludos">👋 Saludan al abrir un camping</button></div>
+    <div class="pjs">${Object.entries(PERSONAJES).map(([k, p]) => {
+      const f = FICHAS_PJ[k], perf = Voz.perfil(k), n = CAMPINGS.filter(c => c.quien.includes(k)).length;
+      return `<div class="pj ${Voz.guia === k ? 'guia' : ''}">
+        <div class="pj-cab"><button class="avatar" style="background:${f.color};cursor:pointer" data-hola="${k}" aria-label="Oír a ${p.nombre}">${p.emoji}</button>
+          <div style="flex:1"><b>${p.nombre}</b><span class="jp sub">${p.ja}</span></div></div>
+        <p>${esc(f.rasgo)}</p>
+        <div class="botones">
+          <button class="chip" data-hola="${k}">🔊 Oírla</button>
+          <button class="chip ${Voz.guia === k ? 'activo' : ''}" data-guia="${k}">${Voz.guia === k ? '⭐ Lee las palabras' : '☆ Que lea las palabras'}</button>
+          ${n ? `<button class="chip" data-donde="${k}">⛺ ${n} campings</button>` : ''}
+        </div>
+        <details class="plegable"><summary>🎚️ Ajustar su voz y poner tus clips ▾</summary>
+          <div class="deslizador"><span>Tono</span><input type="range" min=".5" max="2" step=".05" value="${perf.tono}" data-ajuste="tono" data-k="${k}"><span>${perf.tono.toFixed(2)}</span></div>
+          <div class="deslizador"><span>Velocidad</span><input type="range" min=".6" max="1.6" step=".05" value="${perf.vel}" data-ajuste="vel" data-k="${k}"><span>${perf.vel.toFixed(2)}</span></div>
+          <div class="clips">${Object.entries(MOMENTOS).map(([m, t]) => {
+            const clave = `${k}:${m}`, hay = conClip.has(clave);
+            return `<div class="clip"><span>${t}</span>
+              <button data-grabar="${clave}" title="Grabar con el micrófono">🎙️</button>
+              <label title="Subir un audio">📁<input type="file" accept="audio/*" data-subir="${clave}" hidden></label>
+              <button class="${hay ? 'si' : ''}" data-probar="${clave}" title="Escuchar">▶︎</button>
+              ${hay ? `<button data-borrar="${clave}" title="Quitar el clip">🗑</button>` : ''}</div>`;
+          }).join('')}</div>
+          <button class="chip" data-reset="${k}" style="margin-top:8px">↺ Voz original</button>
+        </details>
+      </div>`;
+    }).join('')}</div>
+    <p class="creditos">Las frases son originales de esta web, escritas al estilo de cada personaje. No se usan audios del anime: las voces reales son de sus actrices y no se pueden publicar.
+      Tus clips se quedan solo en este navegador.${vv ? ` Voces sintéticas: ${[...new Set(Object.values(Voz.estado.hablantes).map(h => 'VOICEVOX:' + h.nombre))].join(', ')}.` : ''}</p>`;
+
+  const cont = $('#personajes');
+  cont.querySelectorAll('[data-hola]').forEach(b => b.onclick = () => Voz.reaccionar(b.dataset.hola, 'hola'));
+  cont.querySelectorAll('[data-guia]').forEach(b => b.onclick = () => { Voz.guia = b.dataset.guia; pintarPersonajes(); Voz.decir('よろしくね！', b.dataset.guia, { traduccion: '¡Encantada! Ahora leo yo las palabras.' }); });
+  cont.querySelectorAll('[data-donde]').forEach(b => b.onclick = () => { filtro.quien = b.dataset.donde; irA('mapa'); actualizarMapa(true); });
+  cont.querySelectorAll('[data-ajuste]').forEach(r => {
+    r.oninput = () => { r.nextElementSibling.textContent = (+r.value).toFixed(2); Voz.ajustar(r.dataset.k, r.dataset.ajuste, +r.value); };
+    r.onchange = () => Voz.reaccionar(r.dataset.k, 'hola');
+  });
+  cont.querySelectorAll('[data-reset]').forEach(b => b.onclick = () => { Voz.restablecer(b.dataset.reset); pintarPersonajes(); });
+  cont.querySelectorAll('[data-probar]').forEach(b => b.onclick = () => { const [k, m] = b.dataset.probar.split(':'); Voz.reaccionar(k, m); });
+  cont.querySelectorAll('[data-borrar]').forEach(b => b.onclick = async () => { await Voz.clips.borrar(b.dataset.borrar); pintarPersonajes(); });
+  cont.querySelectorAll('[data-subir]').forEach(inp => inp.onchange = async () => {
+    const f = inp.files[0]; if (!f) return;
+    if (f.size > 5e6) return avisar('Ese audio pasa de 5 MB; recórtalo un poco');
+    await Voz.clips.guardar(inp.dataset.subir, f); avisar('📁 Clip guardado en este navegador'); pintarPersonajes();
+  });
+  cont.querySelectorAll('[data-grabar]').forEach(b => b.onclick = () => grabar(b));
+  $('#buscar-vv').onclick = async () => { avisar('🔌 Buscando VOICEVOX…'); avisar(await Voz.detectarVoicevox() ? '✅ VOICEVOX conectado' : 'No encuentro VOICEVOX en este ordenador'); pintarPersonajes(); };
+  $('#saludos').onclick = () => { Voz.opcion('saludos', Voz.ajustes.saludos === false); pintarPersonajes(); };
+}
+async function grabar(boton) {
+  // Segundo toque: parar y guardar
+  if (grabadora) return grabadora.stop();
+  if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') return avisar('Este navegador no puede grabar audio');
+  let flujo;
+  try { flujo = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch { return avisar('🎙️ Sin permiso para usar el micrófono'); }
+  const trozos = [];
+  grabadora = new MediaRecorder(flujo);
+  grabadora.ondataavailable = e => trozos.push(e.data);
+  grabadora.onstop = async () => {
+    flujo.getTracks().forEach(t => t.stop()); grabadora = null;
+    await Voz.clips.guardar(boton.dataset.grabar, new Blob(trozos, { type: trozos[0]?.type || 'audio/webm' }));
+    avisar('🎙️ ¡Grabado! Ahora suena tu versión'); pintarPersonajes();
+  };
+  grabadora.start(); boton.classList.add('grabando'); boton.textContent = '⏹';
+  avisar('🎙️ Grabando… toca ⏹ para acabar');
+  setTimeout(() => grabadora?.stop(), 8000); // un clip de reacción no necesita más
+}
+
+/* ================= Hoguera: crepitar sintetizado, sin archivos de audio ================= */
+const Hoguera = (() => {
+  let ctx = null, nodos = [], chispas = null;
+  function ruidoMarron(ctx) {
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 3, ctx.sampleRate), d = buf.getChannelData(0);
+    let ult = 0; for (let i = 0; i < d.length; i++) { ult = (ult + .02 * (Math.random() * 2 - 1)) / 1.02; d[i] = ult * 3.5; }
+    const s = ctx.createBufferSource(); s.buffer = buf; s.loop = true; return s;
+  }
+  function chasquido() {
+    const t = ctx.currentTime, dur = .02 + Math.random() * .05;
+    const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3);
+    const s = ctx.createBufferSource(), g = ctx.createGain(), f = ctx.createBiquadFilter();
+    f.type = 'highpass'; f.frequency.value = 1200 + Math.random() * 2500; g.gain.value = .15 + Math.random() * .35;
+    s.buffer = buf; s.connect(f).connect(g).connect(ctx.destination); s.start(t);
+  }
+  return {
+    get sonando() { return !!chispas; },
+    encender() {
+      ctx ||= new (window.AudioContext || window.webkitAudioContext)(); ctx.resume();
+      const base = ruidoMarron(ctx), filtro = ctx.createBiquadFilter(), g = ctx.createGain();
+      filtro.type = 'lowpass'; filtro.frequency.value = 500; g.gain.value = .5;
+      base.connect(filtro).connect(g).connect(ctx.destination); base.start(); nodos = [base, g];
+      const programar = () => { chasquido(); if (Math.random() < .3) setTimeout(chasquido, 40); chispas = setTimeout(programar, 80 + Math.random() * 600); };
+      programar();
+    },
+    apagar() { clearTimeout(chispas); chispas = null; nodos.forEach(n => { try { n.stop?.(); n.disconnect(); } catch {} }); nodos = []; },
+  };
+})();
+$('#hoguera').onclick = e => {
+  Hoguera.sonando ? Hoguera.apagar() : (Hoguera.encender(), Voz.reaccionar('rin', 'hola'));
+  e.currentTarget.classList.toggle('activo', Hoguera.sonando);
+};
+
+/* ================= Panel del móvil: hoja que se arrastra ================= */
+const esMovil = () => matchMedia('(max-width: 820px)').matches;
+(() => {
+  const panel = $('#panel'), estados = ['mini', 'medio', 'lleno'];
+  let estado = 'mini';
+  const poner = e => { estado = e; panel.classList.remove('medio', 'lleno'); if (e !== 'mini') panel.classList.add(e); panel.style.height = ''; };
+  let soltado = 0;
+  // El click que llega justo después de un arrastre no debe cambiar otra vez el estado
+  $('#asa').onclick = () => { if (Date.now() - soltado > 300) poner(estados[(estados.indexOf(estado) + 1) % 3]); };
+  $('#ver-filtros').onclick = e => {
+    const abrir = !panel.classList.contains('con-filtros');
+    panel.classList.toggle('con-filtros', abrir); e.currentTarget.classList.toggle('activo', abrir);
+    if (abrir && estado === 'mini') poner('medio');
+  };
+  $('#buscar').addEventListener('focus', () => { if (esMovil() && estado === 'mini') poner('medio'); });
+  // Arrastre desde el asa o la cabecera (no desde el buscador ni los botones)
+  let inicioY = null, altoInicio = 0, movido = false;
+  panel.addEventListener('pointerdown', e => {
+    if (!esMovil() || !e.target.closest('.asa, #panel header') || e.target.closest('input, #ver-filtros')) return;
+    inicioY = e.clientY; altoInicio = panel.getBoundingClientRect().height; movido = false;
+  });
+  addEventListener('pointermove', e => {
+    if (inicioY === null) return;
+    const dy = inicioY - e.clientY;
+    if (Math.abs(dy) > 6) { movido = true; panel.classList.add('arrastrando'); }
+    if (movido) panel.style.height = Math.max(150, Math.min(innerHeight - 90, altoInicio + dy)) + 'px';
+  });
+  addEventListener('pointerup', () => {
+    if (inicioY === null) return;
+    inicioY = null; panel.classList.remove('arrastrando');
+    if (!movido) return;
+    const h = panel.getBoundingClientRect().height / innerHeight;
+    poner(h < .36 ? 'mini' : h < .7 ? 'medio' : 'lleno');
+    soltado = Date.now();
+  });
+  window.panelMovil = { poner };
+})();
+
 /* ================= Navegación del dock ================= */
 function irA(vista) {
   document.querySelectorAll('#dock button').forEach(b => b.classList.toggle('activo', b.dataset.vista === vista));
@@ -687,6 +977,7 @@ function irA(vista) {
   if (vista === 'quiz') pintarMenuQuiz();
   if (vista === 'mochila') pintarMochila();
   if (vista === 'pasaporte') pintarPasaporte();
+  if (vista === 'personajes') pintarPersonajes();
 }
 document.querySelectorAll('#dock button').forEach(b => b.onclick = () => irA(b.dataset.vista));
 
@@ -696,6 +987,7 @@ visor.onclick = () => visor.classList.remove('abierto');
 addEventListener('keydown', e => { if (e.key === 'Escape') { visor.classList.contains('abierto') ? visor.classList.remove('abierto') : cerrarFicha(); } });
 
 actualizarMapa(true);
+Voz.detectarVoicevox();
 </script>
 </body>
 </html>
