@@ -1,0 +1,17 @@
+{
+  "name": "ゆるキャン△ Mapa — campings y japonés",
+  "short_name": "ゆるキャン△",
+  "description": "Los campings y lugares reales de Yuru Camp, con las voces de los personajes para aprender japonés.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b1a24",
+  "theme_color": "#0b1a24",
+  "icons": [
+    { "src": "iconos/icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "iconos/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "iconos/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

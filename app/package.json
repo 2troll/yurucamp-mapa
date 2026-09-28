@@ -1,0 +1,18 @@
+{
+  "name": "yurucamp-mapa-app",
+  "private": true,
+  "version": "1.0.0",
+  "description": "App de Android de ゆるキャン△ Mapa (Capacitor): la web empaquetada, sin servidor.",
+  "scripts": {
+    "preparar": "sh preparar.sh",
+    "apk": "sh preparar.sh && npx cap sync android && cd android && ./gradlew assembleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/core": "^8.5.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.2"
+  }
+}

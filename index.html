@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Yuru Camp△ Japón</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b1a24">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ゆるキャン△">
+<link rel="apple-touch-icon" href="iconos/apple-touch-icon.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="campings.js?v=4"></script>
@@ -276,16 +283,15 @@
   .globo-lugar .boton, .leaflet-container .globo-lugar a.boton { padding: 9px; font-size: 13px; color: #fff; }
 
   /* ---------- Estilos de mapa ---------- */
-  body.estilo-anime .leaflet-tile-pane { filter: saturate(1.45) brightness(1.1) contrast(.9) hue-rotate(-12deg); }
+  /* El tono anime es una capa de color fija encima (barata); un filter en las teselas daba tirones al arrastrar */
   body.estilo-anime #mapa::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 399;
-    background: radial-gradient(ellipse at 50% 0%, rgba(255,190,150,.25), transparent 60%), radial-gradient(ellipse at 50% 120%, rgba(120,170,255,.25), transparent 60%); }
-  body.estilo-noche .leaflet-tile-pane { filter: brightness(.85) saturate(1.2); }
+    background: linear-gradient(rgba(255,214,235,.10), rgba(190,230,255,.12)), radial-gradient(ellipse at 50% 0%, rgba(255,190,150,.28), transparent 60%), radial-gradient(ellipse at 50% 120%, rgba(120,170,255,.25), transparent 60%); }
   body.estilo-noche #mapa::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 399;
     background-image: radial-gradient(1.5px 1.5px at 10% 20%, #fff, transparent), radial-gradient(1px 1px at 30% 70%, #fff, transparent),
       radial-gradient(1.5px 1.5px at 55% 15%, #fff, transparent), radial-gradient(1px 1px at 80% 40%, #fff, transparent),
       radial-gradient(1.5px 1.5px at 70% 85%, #fff, transparent), radial-gradient(1px 1px at 20% 90%, #fff, transparent),
       radial-gradient(1px 1px at 90% 10%, #fff, transparent), linear-gradient(rgba(10,20,60,.35), rgba(40,10,60,.25));
-    animation: titilar 4s ease-in-out infinite alternate; }
+    animation: titilar 4s ease-in-out infinite alternate; will-change: opacity; }
   @keyframes titilar { to { opacity: .7; } }
 
   /* Hojas que caen según la estación */
@@ -520,6 +526,21 @@
   }
   /* Pantallas bajas (portátil pequeño o móvil apaisado) */
   @media (max-height: 560px) and (min-width: 821px) { .portada { height: 170px; } #panel header { padding-top: 12px; } }
+
+  /* ---------- Rendimiento en móviles y tablets ----------
+     El desenfoque (backdrop-filter) se recalcula en cada fotograma al mover el mapa y en Android da tirones.
+     En pantallas táctiles el cristal es un degradado opaco: mismo aspecto, coste casi cero. */
+  @media (pointer: coarse) {
+    .cristal, #ficha, .hoja, #capas, .leaflet-popup-content-wrapper, #capas-lugar .chip, .cerrar, #visor {
+      backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+    .cristal { background: linear-gradient(180deg, rgba(58,64,80,.94), rgba(26,30,40,.94)); box-shadow: 0 8px 24px rgba(0,0,0,.35), var(--brillo); }
+    #ficha, .hoja, #capas { background: linear-gradient(180deg, rgba(40,45,58,.97), rgba(20,24,32,.97)); }
+    .leaflet-popup-content-wrapper { background: rgba(28,32,42,.97); }
+    #visor { background: rgba(0,0,0,.88); }
+    .fuji-marca, body.estilo-noche #mapa::after { animation: none; }
+    .pin, .marca { box-shadow: 0 2px 5px rgba(0,0,0,.35); }
+    .tarjeta, .bloque, .escena, .pj, .modo { transition: none; }
+  }
 </style>
 </head>
 <body>
@@ -543,7 +564,7 @@
     <h1>⛺ <span class="jp">ゆるキャン△</span> Mapa</h1>
     <p class="sub" id="contador"></p>
     <div class="fila-buscar"><input id="buscar" type="search" placeholder="🔎 Camping, kanji o personaje…" autocomplete="off">
-      <button class="chip" id="ver-filtros">⚙︎ Filtros</button></div>
+      <button class="chip" id="ver-filtros">⚙︎ Filtros</button><button class="chip" id="instalar" hidden>📲 Instalar</button></div>
   </header>
   <div id="filtros" class="fino"></div>
   <div class="fila-orden"><span id="orden-txt">Orden del anime</span><button class="chip" id="cerca">📍 Cerca de mí</button></div>
@@ -691,7 +712,7 @@ function ruby(ja, kana) {
 
 /* ================= Mapa ================= */
 let seleccionado = null;
-const mapa = L.map('mapa', { zoomControl: false }).setView([35.4, 138.4], 8);
+const mapa = L.map('mapa', { zoomControl: false, preferCanvas: true, updateWhenZooming: false, wheelPxPerZoomLevel: 90 }).setView([35.4, 138.4], 8);
 const pie = 'Capturas: ©あfろ・芳文社／野外活動委員会';
 const satelite = L.layerGroup([
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imágenes © Esri · ' + pie }),
@@ -734,7 +755,7 @@ L.marker([35.3606, 138.7274], { icon: L.divIcon({ className: '', iconSize: [80, 
 /* ----- Hojas que caen según la estación del año ----- */
 const PARTICULAS = { primavera: ['🌸', '🌸', '🌼'], verano: ['✨', '🌿', '✨'], 'otoño': ['🍁', '🍂', '🍁'], invierno: ['❄️', '❄️', '⛄'] };
 const estacionHoy = (() => { const m = new Date().getMonth() + 1; return m >= 3 && m <= 5 ? 'primavera' : m <= 8 && m >= 6 ? 'verano' : m >= 9 && m <= 11 ? 'otoño' : 'invierno'; })();
-let conParticulas = guardado.leer('particulas', true);
+let conParticulas = guardado.leer('particulas', !matchMedia('(pointer: coarse)').matches);
 function pintarParticulas() {
   let caja = $('#particulas');
   if (!caja) { caja = document.createElement('div'); caja.id = 'particulas'; $('#mapa').appendChild(caja); }
@@ -815,10 +836,15 @@ function pintarCapasLugar() {
     const c = b.dataset.capa, on = !capasLugar.has(c);
     on ? capasLugar.add(c) : capasLugar.delete(c);
     guardado.escribir('capasLugar', [...capasLugar]); ponerCapasLugar(); pintarCapasLugar();
-    if (on) { const d = CATEGORIAS_LUGAR[c]; hablar(d.palabra[0], d.voz); avisar(`${d.emoji} ${d.titulo}: ${n(c)} en el mapa`); }
+    if (on) { const d = CATEGORIAS_LUGAR[c]; hablar(d.palabra[0], d.voz); avisar(`${d.emoji} ${d.titulo}: ${n(c)} en el mapa` + (mapa.getZoom() < ZOOM_LUGARES ? ' · acércate para verlos' : '')); }
   });
 }
-function ponerCapasLugar() { marcasLugar.forEach((m, i) => capasLugar.has(LUGARES[i].c) ? m.addTo(mapa) : mapa.removeLayer(m)); }
+const ZOOM_LUGARES = 9; // de lejos los lugares se amontonan: se muestran al acercarse
+function ponerCapasLugar() {
+  const cerca = mapa.getZoom() >= ZOOM_LUGARES;
+  marcasLugar.forEach((m, i) => cerca && capasLugar.has(LUGARES[i].c) ? (mapa.hasLayer(m) || m.addTo(mapa)) : (mapa.hasLayer(m) && mapa.removeLayer(m)));
+}
+mapa.on('zoomend', () => ponerCapasLugar());
 
 /* ================= Filtros ================= */
 const filtro = { temporada: 'todas', quien: 'todas', paisaje: 'todas', estacion: 'todas', extra: 'todas', texto: '' };
@@ -1551,6 +1577,29 @@ addEventListener('keydown', e => { if (e.key === 'Escape') { visor.classList.con
 actualizarMapa(true);
 dibujarRuta();
 pintarCapasLugar(); ponerCapasLugar(); pintarParticulas();
+
+/* ================= App instalable y sin conexión ================= */
+// Dentro de la app de Android los archivos ya van en el APK: el service worker sobra
+const enApp = !!window.Capacitor?.isNativePlatform?.();
+if ('serviceWorker' in navigator && !enApp) navigator.serviceWorker.register('sw.js').catch(e => console.warn('[app] sin modo offline:', e));
+let avisoInstalar = null;
+addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); avisoInstalar = e;
+  const b = $('#instalar'); b.hidden = false;
+  b.onclick = async () => { avisoInstalar.prompt(); const r = await avisoInstalar.userChoice; if (r.outcome === 'accepted') { b.hidden = true; confeti(['📲', '⛺', '🗻']); } };
+});
+// Botón «atrás» de Android: cierra lo que esté abierto antes de salir de la app
+window.Capacitor?.Plugins?.App?.addListener('backButton', () => {
+  if (visor.classList.contains('abierto')) return visor.classList.remove('abierto');
+  if ($('#capas').classList.contains('abierto')) return abrirCapas(false);
+  if (document.querySelector('.leaflet-popup')) return mapa.closePopup();
+  if ($('#ficha').classList.contains('abierta')) return cerrarFicha();
+  if (escena) { pararEscena(); escena = null; return pintarDialogos(); }
+  if (document.querySelector('.hoja.abierta')) return irA('mapa');
+  if (esMovil() && ($('#panel').classList.contains('medio') || $('#panel').classList.contains('lleno'))) return window.panelMovil.poner('mini');
+  window.Capacitor.Plugins.App.minimizeApp?.() ?? window.Capacitor.Plugins.App.exitApp();
+});
+addEventListener('appinstalled', () => { $('#instalar').hidden = true; avisar('📲 ¡App instalada! Búscala en tu pantalla de inicio'); });
 Voz.detectarVoicevox();
 </script>
 </body>

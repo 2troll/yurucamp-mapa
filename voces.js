@@ -7,7 +7,7 @@
 const FICHAS_PJ = {
   rin: {
     color: '#5e9bff', rasgo: 'Tranquila y de pocas palabras. Acampa sola, lee junto al fuego y viaja en su scooter.',
-    tono: .95, vel: .92, aivis: [['コハク', 'ノーマル'], ['まお', 'おちつき']], aivisVel: .98, vv: [['冥鳴ひまり', 'ノーマル'], ['雨晴はう', 'ノーマル']], vvTono: -.02, vvVel: .95,
+    tono: .95, vel: .92, aivis: [], vv: [['冥鳴ひまり', 'ノーマル'], ['雨晴はう', 'ノーマル']], vvEntonacion: 1, vvTono: -.02, vvVel: .95,
     frases: {
       hola: [['ここ、静かでいいな', 'Aquí se está tranquila.'], ['ソロキャン日和だね', 'Día perfecto para acampar sola.'], ['…ふぅ。火、つけようか', 'Uf… ¿encendemos el fuego?']],
       bien: [['やるじゃん', 'No está nada mal.'], ['うん、正解', 'Sí, correcto.']],
