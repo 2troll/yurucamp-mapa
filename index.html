@@ -8,8 +8,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="campings.js?v=4"></script>
 <script src="vocabulario.js?v=4"></script>
-<script src="voces.js?v=7"></script>
-<script src="anime.js?v=7"></script>
+<script src="voces.js?v=8"></script>
+<script src="anime.js?v=8"></script>
+<script src="lugares.js?v=8"></script>
 <style>
   :root {
     --borde: rgba(255,255,255,.38);
@@ -249,7 +250,56 @@
 
   /* Hoguera */
   #hoguera { position: fixed; top: 16px; right: 150px; z-index: 900; border-radius: 999px; padding: 10px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  #estacion { position: fixed; top: 16px; right: 270px; z-index: 900; border-radius: 999px; padding: 10px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  #estacion.activo { background: rgba(255,255,255,.3); }
   #hoguera.activo { background: linear-gradient(135deg, rgba(255,120,30,.7), rgba(255,69,58,.5)); }
+
+  /* ---------- Lugares del anime en el mapa ---------- */
+  #capas-lugar { position: fixed; top: 68px; left: 392px; right: 16px; z-index: 900; display: flex; gap: 6px; overflow-x: auto; padding: 2px; }
+  #capas-lugar::-webkit-scrollbar { height: 0; }
+  #capas-lugar .chip { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); background: rgba(20,24,32,.55); }
+  #capas-lugar .chip.activo { background: rgba(255,255,255,.9); }
+  .pin { width: 30px; height: 30px; border-radius: 50% 50% 50% 4px; transform: rotate(-45deg); display: grid; place-items: center;
+    border: 2px solid #fff; box-shadow: 0 3px 10px rgba(0,0,0,.45); transition: transform .2s; }
+  .pin span { transform: rotate(45deg); font-size: 15px; line-height: 1; }
+  .pin.visto::after { content: '💮'; position: absolute; transform: rotate(45deg); right: -12px; top: -10px; font-size: 12px; }
+  .pin:hover { transform: rotate(-45deg) scale(1.2); }
+  .fuji-marca { font-size: 46px; filter: drop-shadow(0 4px 10px rgba(0,0,0,.5)); animation: flotar 3s ease-in-out infinite; text-align: center; line-height: 1; }
+  .fuji-marca small { display: block; font-size: 12px; font-weight: 800; color: #fff; background: rgba(0,0,0,.45); border-radius: 99px; padding: 2px 8px; margin-top: -4px; }
+  @keyframes flotar { 50% { transform: translateY(-5px); } }
+  .leaflet-popup-content-wrapper { background: linear-gradient(135deg, rgba(40,46,58,.88), rgba(18,22,30,.85)); color: #fff; border-radius: 22px;
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--borde); box-shadow: var(--sombra); }
+  .leaflet-popup-tip { background: rgba(30,34,44,.9); }
+  .leaflet-popup-content { margin: 0; width: 280px !important; }
+  .leaflet-container a.leaflet-popup-close-button { color: #fff; top: 8px; right: 8px; background: rgba(0,0,0,.4); border-radius: 50%; width: 26px; height: 26px; font-size: 18px; z-index: 2; }
+  .globo-lugar img { width: 100%; height: 160px; object-fit: cover; border-radius: 22px 22px 0 0; display: block; cursor: zoom-in; }
+  .globo-lugar .dentro { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 8px; font-family: inherit; }
+  .globo-lugar h3 { font-size: 17px; line-height: 1.3; margin: 0; }
+  .globo-lugar .fila { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .globo-lugar .palabra { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px; background: rgba(255,255,255,.1); }
+  .globo-lugar .palabra b { font-size: 26px; }
+  .globo-lugar .acciones { grid-template-columns: 1fr 1fr; }
+  .globo-lugar .boton, .leaflet-container .globo-lugar a.boton { padding: 9px; font-size: 13px; color: #fff; }
+
+  /* ---------- Estilos de mapa ---------- */
+  body.estilo-anime .leaflet-tile-pane { filter: saturate(1.45) brightness(1.1) contrast(.9) hue-rotate(-12deg); }
+  body.estilo-anime #mapa::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 399;
+    background: radial-gradient(ellipse at 50% 0%, rgba(255,190,150,.25), transparent 60%), radial-gradient(ellipse at 50% 120%, rgba(120,170,255,.25), transparent 60%); }
+  body.estilo-noche .leaflet-tile-pane { filter: brightness(.85) saturate(1.2); }
+  body.estilo-noche #mapa::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 399;
+    background-image: radial-gradient(1.5px 1.5px at 10% 20%, #fff, transparent), radial-gradient(1px 1px at 30% 70%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 55% 15%, #fff, transparent), radial-gradient(1px 1px at 80% 40%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 70% 85%, #fff, transparent), radial-gradient(1px 1px at 20% 90%, #fff, transparent),
+      radial-gradient(1px 1px at 90% 10%, #fff, transparent), linear-gradient(rgba(10,20,60,.35), rgba(40,10,60,.25));
+    animation: titilar 4s ease-in-out infinite alternate; }
+  @keyframes titilar { to { opacity: .7; } }
+
+  /* Hojas que caen según la estación */
+  .particula { position: fixed; top: -40px; z-index: 450; pointer-events: none; font-size: 20px; animation: caida linear infinite; opacity: .9; }
+  @keyframes caida { 0% { transform: translate(0, 0) rotate(0); } 50% { transform: translate(var(--vaiven), 50vh) rotate(180deg); } 100% { transform: translate(0, 110vh) rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .particula, .fuji-marca, #bocadillo.hablando .avatar { animation: none; } .particula { display: none; } }
+  .tarjeta .quien-dice { position: absolute; left: 10px; bottom: 10px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; border: 1.5px solid #fff; }
+  .tarjeta .es { padding-left: 28px; }
 
   /* Segmentos (Palabras/Diálogos, Ruta/Mochila) */
   .segmentos { display: inline-flex; padding: 3px; border-radius: 999px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); margin-top: 10px; }
@@ -312,7 +362,14 @@
     #dock button { padding: 6px 0; font-size: 10px; border-radius: 14px; min-height: 52px; justify-content: center; }
     #dock button span { font-size: 21px; }
 
-    #capa, #hoguera { top: var(--arriba); padding: 8px 12px; font-size: 12px; }
+    #capa, #hoguera, #estacion { top: var(--arriba); padding: 8px 12px; font-size: 12px; }
+    #estacion { right: auto; left: 104px; }
+    #capas-lugar { top: calc(var(--arriba) + 44px); left: 8px; right: 8px; }
+    .leaflet-popup-content { width: 250px !important; }
+    .globo-lugar img { height: 118px; }
+    body.con-globo #panel { transform: translateY(calc(100% - 26px)); }
+    #panel { transition: height .35s cubic-bezier(.2,.9,.3,1), opacity .3s, transform .35s; }
+    .globo-lugar .dentro { gap: 6px; padding: 10px 12px 12px; }
     #capa { right: 10px; } #hoguera { right: auto; left: 10px; }
 
     /* El panel es una hoja que se arrastra: mini (solo buscador), medio y lleno */
@@ -376,11 +433,13 @@
 <div id="mapa"></div>
 <button id="capa" class="cristal">🛰️ Satélite</button>
 <button id="hoguera" class="cristal" title="Sonido de hoguera">🔥 Hoguera</button>
+<button id="estacion" class="cristal" title="Hojas que caen según la estación"></button>
+<div id="capas-lugar" class="fino"></div>
 
 <aside id="panel" class="cristal">
   <button class="asa" id="asa" aria-label="Subir o bajar la lista"></button>
   <header>
-    <h1>⛺ Yuru Camp△ <span class="jp">キャンプ場</span></h1>
+    <h1>⛺ <span class="jp">ゆるキャン△</span> Mapa</h1>
     <p class="sub" id="contador"></p>
     <div class="fila-buscar"><input id="buscar" type="search" placeholder="🔎 Camping, kanji o personaje…" autocomplete="off">
       <button class="chip" id="ver-filtros">⚙︎ Filtros</button></div>
@@ -421,11 +480,11 @@
 <section class="hoja cristal" id="hoja-pasaporte">
   <header><div><h1>🏅 Pasaporte de campings</h1><p class="sub" id="pasaporte-sub"></p></div><span class="rango" id="rango"></span></header>
   <div style="padding:0 24px 10px"><div class="progreso"><i id="pasaporte-barra"></i></div></div>
-  <div class="contenido fino"><div class="sellos" id="sellos"></div></div>
+  <div class="contenido fino"><div class="sellos" id="sellos"></div><div id="sellos-lugar"></div></div>
 </section>
 
 <section class="hoja cristal" id="hoja-personajes">
-  <header><div><h1>👥 Personajes y voces</h1><p class="sub">Toca a una para oírla · la que tiene ⭐ lee todas las palabras</p></div></header>
+  <header><div><h1>👥 Personajes y voces</h1><p class="sub">Toca a una para oírla · cada tema de palabras lo dice una chica distinta</p></div></header>
   <div class="contenido fino" id="personajes"></div>
 </section>
 
@@ -443,7 +502,7 @@
 <div id="bocadillo" class="cristal" aria-live="polite"></div>
 
 <script>
-if (typeof CAMPINGS === 'undefined' || typeof VOCABULARIO === 'undefined' || typeof Voz === 'undefined' || typeof DIALOGOS === 'undefined' || typeof L === 'undefined') {
+if (typeof CAMPINGS === 'undefined' || typeof VOCABULARIO === 'undefined' || typeof Voz === 'undefined' || typeof DIALOGOS === 'undefined' || typeof LUGARES === 'undefined' || typeof L === 'undefined') {
   document.body.innerHTML = '<p style="padding:40px">No se pudieron cargar los datos o el mapa (¿sin conexión?).</p>';
   throw new Error('Faltan campings.js, vocabulario.js, voces.js o Leaflet');
 }
@@ -467,13 +526,16 @@ const ESTACIONES = { 'otoño': '🍁 Otoño', invierno: '❄️ Invierno', prima
 const RANGOS = [[0, '🏠 Novata de へやキャン'], [1, '🔥 Encendiste la primera hoguera'], [3, '🏕️ Miembro del 野クル'],
   [6, '🛵 Campista solitaria como Rin'], [10, '🗻 Cazadora de Fujis'], [15, '🎖️ Maestra ゆるキャン'], [CAMPINGS.length, '👑 Leyenda de Yamanashi']];
 const MOCHILA = [
-  { titulo: '🛌 Dormir', cosas: [['テント', 'tienda'], ['寝袋', 'saco de dormir'], ['マット', 'esterilla'], ['枕', 'almohada (まくら)']] },
-  { titulo: '🔥 Fuego y cocina', cosas: [['焚き火台', 'brasero'], ['薪', 'leña'], ['着火剤', 'pastilla de encendido'], ['バーナー', 'hornillo'],
+  { voz: 'rin', titulo: '🛌 Dormir', cosas: [['テント', 'tienda'], ['寝袋', 'saco de dormir'], ['マット', 'esterilla'], ['枕', 'almohada (まくら)']] },
+  { voz: 'aoi', titulo: '🔥 Fuego y cocina', cosas: [['焚き火台', 'brasero'], ['薪', 'leña'], ['着火剤', 'pastilla de encendido'], ['バーナー', 'hornillo'],
       ['ガス缶', 'cartucho de gas'], ['鍋', 'olla'], ['カップ麺', 'fideos instantáneos, por si acaso (como Rin)'], ['割り箸', 'palillos']] },
-  { titulo: '🧥 Ropa y frío', cosas: [['防寒着', 'ropa de abrigo'], ['カイロ', 'calentadores'], ['軍手', 'guantes'], ['雨具', 'ropa de lluvia']] },
-  { titulo: '🔦 Luz y montaje', cosas: [['ランタン', 'farol'], ['ヘッドライト', 'linterna frontal'], ['ペグ', 'piquetas'], ['ハンマー', 'martillo'], ['電池', 'pilas']] },
-  { titulo: '🧭 Viaje', cosas: [['地図', 'mapa (sin cobertura en la montaña)'], ['水筒', 'cantimplora'], ['ゴミ袋', 'bolsa de basura (ごみぶくろ)'], ['予約確認', 'confirmación de la reserva (よやくかくにん)']] },
+  { voz: 'ena', titulo: '🧥 Ropa y frío', cosas: [['防寒着', 'ropa de abrigo'], ['カイロ', 'calentadores'], ['軍手', 'guantes'], ['雨具', 'ropa de lluvia']] },
+  { voz: 'chiaki', titulo: '🔦 Luz y montaje', cosas: [['ランタン', 'farol'], ['ヘッドライト', 'linterna frontal'], ['ペグ', 'piquetas'], ['ハンマー', 'martillo'], ['電池', 'pilas']] },
+  { voz: 'sakura', titulo: '🧭 Viaje', cosas: [['地図', 'mapa (sin cobertura en la montaña)'], ['水筒', 'cantimplora'], ['ゴミ袋', 'bolsa de basura (ごみぶくろ)'], ['予約確認', 'confirmación de la reserva (よやくかくにん)']] },
 ];
+// Cada tema de vocabulario lo dice la chica que más pega con él
+const VOZ_CATEGORIA = { equipo: 'chiaki', fuego: 'aoi', camping: 'rin', naturaleza: 'ena', carretera: 'sakura', gps: 'ayano', sitios: 'nadeshiko', frases: 'toba', anime: 'nadeshiko' };
+const vozPalabra = cat => Voz.ajustes.soloGuia ? Voz.guia : (VOZ_CATEGORIA[cat] || Voz.guia);
 const TODAS_PALABRAS = VOCABULARIO.flatMap(c => c.palabras.map(p => ({ es: p[3], w: p[0], kana: p[1], romaji: p[2], emoji: p[4], cat: c.id })));
 
 /* ================= Memoria local (solo comodidad; si falla, la app sigue) ================= */
@@ -535,13 +597,51 @@ const satelite = L.layerGroup([
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }),
 ]);
 const topo = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Mapa © Esri · ' + pie });
-satelite.addTo(mapa);
-let enSatelite = true;
-$('#capa').onclick = e => {
-  enSatelite = !enSatelite;
-  mapa.removeLayer(enSatelite ? topo : satelite); (enSatelite ? satelite : topo).addTo(mapa);
-  e.currentTarget.textContent = enSatelite ? '🛰️ Satélite' : '🗺️ Topográfico';
-};
+const noche = L.layerGroup([
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, attribution: 'Mapa © Esri · ' + pie }),
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 }),
+]);
+// El estilo «anime» es el topográfico pintado con filtros CSS en tonos pastel
+const ESTILOS = [['satelite', '🛰️ Satélite', satelite], ['anime', '🎨 Anime', topo], ['topo', '🗺️ Topo', topo], ['noche', '🌙 Noche', noche]];
+let estilo = guardado.leer('estilo', 'anime');
+function ponerEstilo(clave) {
+  const nuevo = ESTILOS.find(e => e[0] === clave) || ESTILOS[1];
+  ESTILOS.forEach(e => { if (e[2] !== nuevo[2]) mapa.removeLayer(e[2]); });
+  nuevo[2].addTo(mapa);
+  document.body.classList.remove('estilo-anime', 'estilo-noche');
+  if (clave === 'anime' || clave === 'noche') document.body.classList.add('estilo-' + clave);
+  estilo = nuevo[0]; guardado.escribir('estilo', estilo);
+  const sig = ESTILOS[(ESTILOS.indexOf(nuevo) + 1) % ESTILOS.length];
+  $('#capa').textContent = nuevo[1]; $('#capa').title = 'Cambiar a ' + sig[1];
+}
+ponerEstilo(estilo);
+$('#capa').onclick = () => ponerEstilo(ESTILOS[(ESTILOS.findIndex(e => e[0] === estilo) + 1) % ESTILOS.length][0]);
+
+/* ----- El Fuji, siempre a la vista ----- */
+L.marker([35.3606, 138.7274], { icon: L.divIcon({ className: '', iconSize: [80, 70], iconAnchor: [40, 50], html: '<div class="fuji-marca">🗻<small class="jp">富士山</small></div>' }), zIndexOffset: -100 })
+  .addTo(mapa).on('click', () => { Voz.decir('富士山だ〜！きれい〜！', 'nadeshiko', { traduccion: '¡Es el Fuji! ¡Qué bonito! (ふじさん, 3.776 m)' }); });
+
+/* ----- Hojas que caen según la estación del año ----- */
+const PARTICULAS = { primavera: ['🌸', '🌸', '🌼'], verano: ['✨', '🌿', '✨'], 'otoño': ['🍁', '🍂', '🍁'], invierno: ['❄️', '❄️', '⛄'] };
+const estacionHoy = (() => { const m = new Date().getMonth() + 1; return m >= 3 && m <= 5 ? 'primavera' : m <= 8 && m >= 6 ? 'verano' : m >= 9 && m <= 11 ? 'otoño' : 'invierno'; })();
+let conParticulas = guardado.leer('particulas', true);
+function pintarParticulas() {
+  document.querySelectorAll('.particula').forEach(p => p.remove());
+  $('#estacion').textContent = PARTICULAS[estacionHoy][0] + (esMovil() ? '' : ' ' + ESTACIONES[estacionHoy].split(' ')[1]);
+  $('#estacion').classList.toggle('activo', conParticulas);
+  if (!conParticulas) return;
+  for (let n = 0; n < (esMovil() ? 9 : 16); n++) {
+    const p = document.createElement('div'); p.className = 'particula';
+    p.textContent = PARTICULAS[estacionHoy][n % 3];
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.fontSize = 14 + Math.random() * 14 + 'px';
+    p.style.animationDuration = 9 + Math.random() * 12 + 's';
+    p.style.animationDelay = -Math.random() * 20 + 's';
+    p.style.setProperty('--vaiven', (Math.random() - .5) * 160 + 'px');
+    document.body.appendChild(p);
+  }
+}
+$('#estacion').onclick = () => { conParticulas = !conParticulas; guardado.escribir('particulas', conParticulas); pintarParticulas(); };
 
 const marcadores = CAMPINGS.map((c, i) => L.marker([c.lat, c.lng], { icon: iconoDe(i) })
   .bindTooltip(`${c.nombre} · ${c.ja}`, { className: 'cristal-tt', direction: 'top', offset: [0, -20] })
@@ -552,6 +652,59 @@ function iconoDe(i) {
     html: `<div class="marca ${i === seleccionado ? 'sel' : ''}" style="background:${COLORES[c.temporada]}">⛺${visitados.has(i) ? '<span class="visto">💮</span>' : ''}</div>` });
 }
 function refrescarIcono(i) { marcadores[i].setIcon(iconoDe(i)); }
+
+/* ================= Lugares del anime: casas, instituto, bancos, onsen… ================= */
+const COLOR_LUGAR = { casa: '#ff8fb1', escuela: '#ffd166', banco: '#c79bff', estacion: '#5e9bff', onsen: '#ff7a59', templo: '#e5484d',
+  comida: '#ffb340', tienda: '#30c3a0', fuji: '#64d2ff', puente: '#9aa7b8', naturaleza: '#30d158', escena: '#8e8e93' };
+const capasLugar = new Set(guardado.leer('capasLugar', ['casa', 'escuela', 'banco', 'fuji', 'onsen']));
+const lugaresVistos = new Set(guardado.leer('lugaresVistos', []));
+const iconoLugar = i => { const l = LUGARES[i];
+  return L.divIcon({ className: '', iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -28],
+    html: `<div class="pin ${lugaresVistos.has(i) ? 'visto' : ''}" style="background:${COLOR_LUGAR[l.c]}"><span>${CATEGORIAS_LUGAR[l.c].emoji}</span></div>` }); };
+const marcasLugar = LUGARES.map((l, i) => L.marker([l.lat, l.lng], { icon: iconoLugar(i), zIndexOffset: -50 })
+  .bindTooltip(l.n, { className: 'cristal-tt', direction: 'top', offset: [0, -26] })
+  .bindPopup(() => globoLugar(i), { maxWidth: 300, minWidth: 250, autoPanPaddingTopLeft: [16, 110], autoPanPaddingBottomRight: [16, matchMedia('(max-width: 820px)').matches ? 150 : 110] }));
+// En el móvil el panel de abajo se aparta mientras hay un lugar abierto
+mapa.on('popupopen', () => document.body.classList.add('con-globo')).on('popupclose', () => document.body.classList.remove('con-globo'));
+function globoLugar(i) {
+  const l = LUGARES[i], cat = CATEGORIAS_LUGAR[l.c], [pk, pkana, pes] = cat.palabra, voz = cat.voz;
+  const div = document.createElement('div'); div.className = 'globo-lugar';
+  div.innerHTML = `${l.f ? `<img src="${l.f}" alt="Escena del anime: ${esc(l.n)}" loading="lazy">` : ''}
+    <div class="dentro">
+      <div class="fila"><span class="etq" style="background:${COLOR_LUGAR[l.c]};color:#111;text-shadow:none;border:0">${cat.emoji} ${esc(cat.titulo)}</span><span class="etq">${esc(l.ep)}</span></div>
+      <h3 class="jp">${esc(l.n)}</h3>
+      ${l.nota && !/^\s*$/.test(l.nota) ? `<p class="sub" style="font-size:12.5px">${esc(l.nota)}</p>` : ''}
+      <div class="palabra"><b class="jp">${esc(pk)}</b><div style="flex:1"><b class="jp" style="font-size:14px">${esc(pkana)}</b> — ${esc(pes)}<br>
+        <small class="sub">te lo dice ${PERSONAJES[voz].emoji} ${PERSONAJES[voz].nombre}</small></div><button class="hablar" data-p="1">🔊</button></div>
+      <div class="acciones">
+        <button class="boton" data-nombre="1">🔊 Oír el nombre</button>
+        <button class="boton ${lugaresVistos.has(i) ? 'hecho' : ''}" data-visto="1">${lugaresVistos.has(i) ? '💮 Estuve' : '📍 Estuve aquí'}</button>
+        <a class="boton grande" href="https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lng}" target="_blank" rel="noopener">🚗 Cómo llegar</a>
+      </div></div>`;
+  div.querySelector('[data-p]').onclick = () => hablar(pk, voz);
+  div.querySelector('[data-nombre]').onclick = () => hablar(l.n.replace(/（.*?）|\(.*?\)/g, ''), voz);
+  const img = div.querySelector('img'); if (img) img.onclick = () => verGrande(img.src);
+  div.querySelector('[data-visto]').onclick = e => {
+    lugaresVistos.has(i) ? lugaresVistos.delete(i) : (lugaresVistos.add(i), confeti([cat.emoji, '💮', '✨']), Voz.reaccionar(voz, 'bien'));
+    guardado.escribir('lugaresVistos', [...lugaresVistos]);
+    marcasLugar[i].setIcon(iconoLugar(i));
+    e.currentTarget.classList.toggle('hecho', lugaresVistos.has(i)); e.currentTarget.textContent = lugaresVistos.has(i) ? '💮 Estuve' : '📍 Estuve aquí';
+  };
+  return div;
+}
+function pintarCapasLugar() {
+  const n = c => LUGARES.filter(l => l.c === c).length;
+  const ORDEN = ['casa', 'escuela', 'banco', 'fuji', 'onsen', 'estacion', 'templo', 'comida', 'tienda', 'puente', 'naturaleza', 'escena'];
+  $('#capas-lugar').innerHTML = ORDEN.map(c => [c, CATEGORIAS_LUGAR[c]]).map(([c, d]) =>
+    `<button class="chip ${capasLugar.has(c) ? 'activo' : ''}" data-capa="${c}" title="${esc(d.titulo)}">${d.emoji} ${esc(d.titulo.split(' ')[0] === 'Bancos' ? 'Bancos de Nadeshiko' : d.titulo)} · ${n(c)}</button>`).join('');
+  $('#capas-lugar').querySelectorAll('[data-capa]').forEach(b => b.onclick = () => {
+    const c = b.dataset.capa, on = !capasLugar.has(c);
+    on ? capasLugar.add(c) : capasLugar.delete(c);
+    guardado.escribir('capasLugar', [...capasLugar]); ponerCapasLugar(); pintarCapasLugar();
+    if (on) { const d = CATEGORIAS_LUGAR[c]; hablar(d.palabra[0], d.voz); avisar(`${d.emoji} ${d.titulo}: ${n(c)} en el mapa`); }
+  });
+}
+function ponerCapasLugar() { marcasLugar.forEach((m, i) => capasLugar.has(LUGARES[i].c) ? m.addTo(mapa) : mapa.removeLayer(m)); }
 
 /* ================= Filtros ================= */
 const filtro = { temporada: 'todas', quien: 'todas', paisaje: 'todas', estacion: 'todas', extra: 'todas', texto: '' };
@@ -755,11 +908,12 @@ function pintarPalabras() {
   const hoy = TODAS_PALABRAS[Math.floor(Date.now() / 864e5) % TODAS_PALABRAS.length];
   $('#palabras').innerHTML = `
     <div class="del-dia"><div class="kanji jp">${esc(hoy.w)}</div><div style="flex:1"><h4 style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--suave)">☀️ Palabra del día</h4>
-      <p><b class="jp">${esc(hoy.kana)}</b> · <i>${esc(hoy.romaji)}</i> — ${esc(hoy.es)} ${hoy.emoji}</p></div><button class="hablar" data-decir="${esc(hoy.w)}">🔊</button></div>
+      <p><b class="jp">${esc(hoy.kana)}</b> · <i>${esc(hoy.romaji)}</i> — ${esc(hoy.es)} ${hoy.emoji}</p></div><button class="hablar" data-decir="${esc(hoy.w)}" data-quien="${vozPalabra(hoy.cat)}">🔊</button></div>
     ${lista.length ? '' : '<div class="vacia">Todavía no has marcado ninguna con ⭐</div>'}
     <div class="rejilla">${lista.map(p => `
-      <div class="tarjeta ${ocultar ? 'oculta' : ''}" data-w="${esc(p.w)}">
-        <button class="altavoz" data-decir="${esc(p.w)}" title="Escuchar">🔊</button>
+      <div class="tarjeta ${ocultar ? 'oculta' : ''}" data-w="${esc(p.w)}" data-quien="${vozPalabra(p.cat)}">
+        <button class="altavoz" data-decir="${esc(p.w)}" data-quien="${vozPalabra(p.cat)}" title="Escuchar">🔊</button>
+        <span class="quien-dice" style="background:${FICHAS_PJ[vozPalabra(p.cat)].color}" title="La dice ${PERSONAJES[vozPalabra(p.cat)].nombre}">${PERSONAJES[vozPalabra(p.cat)].emoji}</span>
         <button class="estrella ${aprendidas.has(p.w) ? 'si' : ''}" data-e="${esc(p.w)}" title="Marcar como aprendida">${aprendidas.has(p.w) ? '⭐' : '☆'}</button>
         <div class="emo">${p.emoji}</div>
         <div class="escritura jp">${esc(p.w)}</div>
@@ -767,13 +921,13 @@ function pintarPalabras() {
         <div class="romaji">${esc(p.romaji)}</div>
         <div class="es">${esc(p.es)}</div>
       </div>`).join('')}</div>`;
-  $('#palabras').querySelectorAll('[data-decir]').forEach(b => b.onclick = e => { e.stopPropagation(); hablar(b.dataset.decir); });
+  $('#palabras').querySelectorAll('[data-decir]').forEach(b => b.onclick = e => { e.stopPropagation(); hablar(b.dataset.decir, b.dataset.quien); });
   $('#palabras').querySelectorAll('[data-e]').forEach(b => b.onclick = e => {
     e.stopPropagation(); const w = b.dataset.e;
     aprendidas.has(w) ? aprendidas.delete(w) : (aprendidas.add(w), aprendidas.size % 10 === 0 && (confeti(['⭐', '🈁', '🎌']), avisar(`⭐ ¡${aprendidas.size} palabras aprendidas!`)));
     guardado.escribir('aprendidas', [...aprendidas]); pintarPalabras();
   });
-  $('#palabras').querySelectorAll('.tarjeta').forEach(t => t.onclick = () => { t.classList.toggle('oculta'); if (!t.classList.contains('oculta')) hablar(t.dataset.w); });
+  $('#palabras').querySelectorAll('.tarjeta').forEach(t => t.onclick = () => { t.classList.toggle('oculta'); if (!t.classList.contains('oculta')) hablar(t.dataset.w, t.dataset.quien); });
 }
 $('#modo-tarjeta').onclick = e => { ocultar = !ocultar; e.currentTarget.classList.toggle('activo', ocultar); pintarPalabras(); };
 $('#solo-estrella').onclick = e => { soloEstrella = !soloEstrella; e.currentTarget.classList.toggle('activo', soloEstrella); pintarPalabras(); };
@@ -869,19 +1023,20 @@ function preguntaDe(modo) {
     const fuente = modo === 'oido' ? TODAS_PALABRAS.filter(p => ['gps', 'carretera'].includes(p.cat)) : TODAS_PALABRAS;
     const bien = fuente[Math.floor(Math.random() * fuente.length)];
     const ops = distintas(bien, fuente, p => p.es);
-    if (modo === 'es_ja') return { enunciado: `<div class="grande" style="font-size:34px">${bien.emoji} ${esc(bien.es)}</div>`, ops: ops.map(p => ({ txt: `<span class="jp">${esc(p.w)}</span>`, ok: p === bien })), decir: bien.w, explica: `${bien.w} · ${bien.kana} · ${bien.romaji}` };
-    if (modo === 'oido') return { enunciado: `<button class="boton" data-repetir style="font-size:20px;padding:22px 34px">🔊 Escuchar otra vez</button>`, alEmpezar: () => hablar(bien.w), ops: ops.map(p => ({ txt: esc(p.es), ok: p === bien })), decir: bien.w, explica: `${bien.w} · ${bien.romaji}` };
-    return { enunciado: `<div class="grande jp">${esc(bien.w)}</div><div class="sub jp" style="font-size:16px">${bien.kana !== bien.w ? esc(bien.kana) : ''}</div>`, ops: ops.map(p => ({ txt: esc(p.es), ok: p === bien })), decir: bien.w, explica: `${bien.romaji} — ${bien.es}` };
+    const q = vozPalabra(bien.cat);
+    if (modo === 'es_ja') return { quien: q, enunciado: `<div class="grande" style="font-size:34px">${bien.emoji} ${esc(bien.es)}</div>`, ops: ops.map(p => ({ txt: `<span class="jp">${esc(p.w)}</span>`, ok: p === bien })), decir: bien.w, explica: `${bien.w} · ${bien.kana} · ${bien.romaji}` };
+    if (modo === 'oido') return { quien: q, enunciado: `<button class="boton" data-repetir style="font-size:20px;padding:22px 34px">🔊 Escuchar otra vez</button>`, alEmpezar: () => hablar(bien.w, q), ops: ops.map(p => ({ txt: esc(p.es), ok: p === bien })), decir: bien.w, explica: `${bien.w} · ${bien.romaji}` };
+    return { quien: q, enunciado: `<div class="grande jp">${esc(bien.w)}</div><div class="sub jp" style="font-size:16px">${bien.kana !== bien.w ? esc(bien.kana) : ''}</div>`, ops: ops.map(p => ({ txt: esc(p.es), ok: p === bien })), decir: bien.w, explica: `${bien.romaji} — ${bien.es}` };
   }
   if (modo === 'camping') {
     const bien = conFoto[Math.floor(Math.random() * conFoto.length)];
     const foto = bien.fotos[Math.floor(Math.random() * bien.fotos.length)];
-    return { enunciado: `<img src="${foto}" alt="Captura del anime">`, ops: distintas(bien, conFoto, c => c.nombre).map(c => ({ txt: esc(c.nombre), ok: c === bien })), explica: `${bien.nombre} · ${bien.ja} · ${bien.ep}`, decir: bien.kana };
+    return { enunciado: `<img src="${foto}" alt="Captura del anime">`, ops: distintas(bien, conFoto, c => c.nombre).map(c => ({ txt: esc(c.nombre), ok: c === bien })), explica: `${bien.nombre} · ${bien.ja} · ${bien.ep}`, decir: bien.kana, quien: bien.quien[0] };
   }
   if (modo === 'kanji') {
     const conKanji = CAMPINGS.filter(c => /[一-龯]/.test(c.ja));
     const bien = conKanji[Math.floor(Math.random() * conKanji.length)];
-    return { enunciado: `<div class="grande jp" style="font-size:38px">${esc(bien.ja)}</div>`, ops: distintas(bien, conKanji, c => c.kana).map(c => ({ txt: `<span class="jp">${esc(c.kana)}</span>`, ok: c === bien })), explica: `${bien.nombre} · ${bien.ep}`, decir: bien.kana };
+    return { enunciado: `<div class="grande jp" style="font-size:38px">${esc(bien.ja)}</div>`, ops: distintas(bien, conKanji, c => c.kana).map(c => ({ txt: `<span class="jp">${esc(c.kana)}</span>`, ok: c === bien })), explica: `${bien.nombre} · ${bien.ep}`, decir: bien.kana, quien: bien.quien[0] };
   }
   if (modo === 'contesta') {
     const d = DIALOGOS[Math.floor(Math.random() * DIALOGOS.length)];
@@ -1060,12 +1215,12 @@ function pintarMochila() {
   const hechas = MOCHILA.flatMap(s => s.cosas.map(c => c[0])).filter(w => mochila.has(w)).length;
   $('#mochila-sub').textContent = hechas === total ? '✅ ¡Todo listo! Rin aprobaría esta mochila' : `${hechas} de ${total} cosas · toca cada una al meterla (y oye cómo se dice)`;
   $('#mochila-barra').style.width = (hechas / total * 100) + '%';
-  $('#mochila').innerHTML = MOCHILA.map(s => `<div class="seccion-mochila"><h3>${s.titulo}</h3>${s.cosas.map(([w, es]) =>
-    `<div class="check ${mochila.has(w) ? 'si' : ''}" data-w="${esc(w)}"><div class="caja">${mochila.has(w) ? '✓' : ''}</div>
+  $('#mochila').innerHTML = MOCHILA.map(s => `<div class="seccion-mochila"><h3>${s.titulo} <small class="sub">· te lo dice ${PERSONAJES[s.voz].emoji} ${PERSONAJES[s.voz].nombre}</small></h3>${s.cosas.map(([w, es]) =>
+    `<div class="check ${mochila.has(w) ? 'si' : ''}" data-w="${esc(w)}" data-quien="${s.voz}"><div class="caja">${mochila.has(w) ? '✓' : ''}</div>
       <div class="txt"><span class="jpn jp">${esc(w)}</span> <small>· ${esc(es)}</small></div></div>`).join('')}</div>`).join('');
   document.querySelectorAll('.check').forEach(el => el.onclick = () => {
     const w = el.dataset.w, estaba = mochila.has(w);
-    estaba ? mochila.delete(w) : (mochila.add(w), hablar(w));
+    estaba ? mochila.delete(w) : (mochila.add(w), hablar(w, el.dataset.quien));
     guardado.escribir('mochila', [...mochila]);
     pintarMochila();
     if (!estaba && mochila.size === total) { confeti(['🎒', '⛺', '✅']); avisar('🎒 ¡Mochila completa! A la montaña'); }
@@ -1083,6 +1238,12 @@ function pintarPasaporte() {
     <div class="hanko jp">${esc([...c.ja.replace(/キャンプ場|キャンプサイト|キャンプ/g, '')][0])}</div>
     <b>${esc(c.nombre)}</b><small>${esc(c.ep)}</small></div>`).join('');
   document.querySelectorAll('.sello').forEach(s => s.onclick = () => { irA('mapa'); abrirFicha(+s.dataset.i); });
+  $('#sellos-lugar').innerHTML = `<h3 style="font-size:15px;margin:22px 0 10px">📍 Lugares del anime visitados · ${lugaresVistos.size} de ${LUGARES.length}</h3>
+    <div class="sellos">${Object.entries(CATEGORIAS_LUGAR).map(([c, d]) => {
+      const todos = LUGARES.map((l, i) => i).filter(i => LUGARES[i].c === c), hechos = todos.filter(i => lugaresVistos.has(i)).length;
+      return `<div class="sello ${hechos ? 'si' : ''}" data-capa="${c}"><div class="hanko" style="font-size:34px">${d.emoji}</div><b>${esc(d.titulo)}</b><small>${hechos} de ${todos.length}</small></div>`;
+    }).join('')}</div>`;
+  $('#sellos-lugar').querySelectorAll('[data-capa]').forEach(s => s.onclick = () => { capasLugar.add(s.dataset.capa); guardado.escribir('capasLugar', [...capasLugar]); ponerCapasLugar(); pintarCapasLugar(); irA('mapa'); });
 }
 
 /* ================= Personajes y voces ================= */
@@ -1094,7 +1255,8 @@ async function pintarPersonajes() {
     <div class="motor"><div style="flex:1;min-width:220px"><b><span class="luz ${vv ? 'si' : ''}"></span>${vv ? 'VOICEVOX conectado: voces anime de verdad' : 'Voz del navegador (VOICEVOX apagado)'}</b><br>
       <span class="sub">${vv ? 'Cada chica tiene su propia voz. Tus clips grabados tienen prioridad.' : 'Cada chica tiene su tono y su ritmo. Enciende VOICEVOX en el Mac para voces anime y pulsa «Buscar».'}</span></div>
       <button class="chip" id="buscar-vv">🔌 Buscar VOICEVOX</button>
-      <button class="chip ${Voz.ajustes.saludos !== false ? 'activo' : ''}" id="saludos">👋 Saludan al abrir un camping</button></div>
+      <button class="chip ${Voz.ajustes.saludos !== false ? 'activo' : ''}" id="saludos">👋 Saludan al abrir un camping</button>
+      <button class="chip ${Voz.ajustes.soloGuia ? '' : 'activo'}" id="por-tema">🎭 Cada tema de palabras con su chica</button></div>
     <div class="pjs">${Object.entries(PERSONAJES).map(([k, p]) => {
       const f = FICHAS_PJ[k], perf = Voz.perfil(k), n = CAMPINGS.filter(c => c.quien.includes(k)).length;
       return `<div class="pj ${Voz.guia === k ? 'guia' : ''}">
@@ -1142,6 +1304,7 @@ async function pintarPersonajes() {
   });
   cont.querySelectorAll('[data-grabar]').forEach(b => b.onclick = () => grabar(b));
   $('#buscar-vv').onclick = async () => { avisar('🔌 Buscando VOICEVOX…'); avisar(await Voz.detectarVoicevox() ? '✅ VOICEVOX conectado' : 'No encuentro VOICEVOX en este ordenador'); pintarPersonajes(); };
+  $('#por-tema').onclick = () => { Voz.opcion('soloGuia', !Voz.ajustes.soloGuia); pintarPersonajes(); avisar(Voz.ajustes.soloGuia ? '⭐ Ahora la guía lee todas las palabras' : '🎭 Cada tema lo dice su personaje'); };
   $('#saludos').onclick = () => { Voz.opcion('saludos', Voz.ajustes.saludos === false); pintarPersonajes(); };
 }
 async function grabar(boton) {
@@ -1243,6 +1406,7 @@ function irA(vista) {
   document.querySelectorAll('.hoja').forEach(h => h.classList.toggle('abierta', h.id === 'hoja-' + vista));
   const enMapa = vista === 'mapa';
   $('#panel').style.opacity = enMapa ? 1 : 0; $('#panel').style.pointerEvents = enMapa ? '' : 'none';
+  $('#capas-lugar').style.display = enMapa ? '' : 'none';
   if (!enMapa) $('#ficha').classList.remove('abierta');
   if (vista === 'palabras') pintarPalabras();
   if (vista === 'quiz') pintarMenuQuiz();
@@ -1259,6 +1423,7 @@ addEventListener('keydown', e => { if (e.key === 'Escape') { visor.classList.con
 
 actualizarMapa(true);
 dibujarRuta();
+pintarCapasLugar(); ponerCapasLugar(); pintarParticulas();
 Voz.detectarVoicevox();
 </script>
 </body>
