@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Yuru Camp△ Japón</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="campings.js"></script>
+<script src="vocabulario.js"></script>
+<style>
+  :root {
+    --borde: rgba(255,255,255,.38);
+    --texto: #fff;
+    --suave: rgba(255,255,255,.7);
+    --tenue: rgba(255,255,255,.12);
+    --sombra: 0 10px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.5), inset 0 -1px 0 rgba(255,255,255,.08);
+    --T1: #ff9f0a; --T2: #bf5af2; --T3: #0a84ff; --Pel: #30d158;
+    --rojo: #ff453a; --oro: #ffd60a;
+    --radio: 28px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: #0b1a24; color: var(--texto);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Hiragino Sans", "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased; text-shadow: 0 1px 2px rgba(0,0,0,.25); }
+  .jp { font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif; }
+  button { font-family: inherit; color: inherit; }
+  #mapa { position: fixed; inset: 0; }
+
+  .cristal {
+    background: linear-gradient(135deg, rgba(40,46,58,.55), rgba(18,22,30,.38));
+    backdrop-filter: blur(30px) saturate(180%); -webkit-backdrop-filter: blur(30px) saturate(180%);
+    border: 1px solid var(--borde); box-shadow: var(--sombra);
+  }
+  .fino::-webkit-scrollbar { width: 0; height: 0; }
+
+  /* ---------- Dock inferior ---------- */
+  #dock { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 1500;
+    display: flex; gap: 4px; padding: 6px; border-radius: 26px; }
+  #dock button { border: 0; background: transparent; border-radius: 20px; padding: 8px 14px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; font-weight: 600; color: var(--suave);
+    transition: background .25s, color .25s, transform .15s; }
+  #dock button span { font-size: 22px; line-height: 1; }
+  #dock button:hover { transform: translateY(-2px); }
+  #dock button.activo { background: rgba(255,255,255,.22); color: #fff; }
+
+  /* ---------- Panel de campings ---------- */
+  #panel { position: fixed; top: 16px; left: 16px; bottom: 100px; width: 360px; z-index: 1000;
+    border-radius: var(--radio); display: flex; flex-direction: column; overflow: hidden; transition: opacity .3s, transform .3s; }
+  #panel header { padding: 20px 20px 10px; }
+  h1 { font-size: 24px; font-weight: 800; letter-spacing: -.02em; }
+  .sub { color: var(--suave); font-size: 13px; margin-top: 4px; }
+  #buscar { width: 100%; margin-top: 12px; padding: 10px 14px; border-radius: 14px; border: 1px solid var(--borde);
+    background: rgba(255,255,255,.12); color: #fff; font: 14px inherit; font-family: inherit; outline: none; }
+  #buscar::placeholder { color: var(--suave); }
+  #filtros { padding: 0 20px 6px; display: flex; flex-direction: column; gap: 8px; max-height: 38%; overflow-y: auto; }
+  .grupo { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+  .grupo::-webkit-scrollbar { height: 0; }
+  .chip { flex: none; border: 1px solid var(--borde); background: rgba(255,255,255,.1); font-size: 12px; font-weight: 600;
+    padding: 7px 11px; border-radius: 999px; cursor: pointer; transition: background .2s, transform .15s; white-space: nowrap; }
+  .chip:hover { transform: scale(1.04); }
+  .chip.activo { background: rgba(255,255,255,.88); color: #111; text-shadow: none; }
+  .fila-orden { display: flex; justify-content: space-between; align-items: center; padding: 6px 20px; font-size: 12px; color: var(--suave); }
+  #lista { overflow-y: auto; padding: 4px 10px 14px; flex: 1; }
+  .item { display: flex; gap: 12px; align-items: center; padding: 9px; border-radius: 18px; cursor: pointer; transition: background .2s; position: relative; }
+  .item:hover, .item.sel { background: rgba(255,255,255,.18); }
+  .item img, .item .sinfoto { width: 66px; height: 46px; border-radius: 11px; object-fit: cover; flex: none; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+  .sinfoto { background: rgba(255,255,255,.15); display: grid; place-items: center; font-size: 20px; }
+  .item b { font-size: 14px; font-weight: 650; display: block; }
+  .item small { color: var(--suave); font-size: 12px; }
+  .item .sello-mini { position: absolute; left: 58px; top: 4px; font-size: 15px; }
+  .punto { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
+  .vacia { padding: 30px 12px; text-align: center; color: var(--suave); font-size: 14px; }
+
+  /* ---------- Ficha del camping ---------- */
+  #ficha { position: fixed; right: 16px; top: 16px; bottom: 100px; width: min(520px, calc(100vw - 408px)); z-index: 1000;
+    border-radius: var(--radio); overflow-y: auto; transform: translateX(calc(100% + 32px)); transition: transform .5s cubic-bezier(.2,.9,.3,1.1); }
+  #ficha.abierta { transform: none; }
+  .portada { position: relative; height: 240px; border-radius: var(--radio) var(--radio) 0 0; overflow: hidden; }
+  .portada img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; }
+  .portada::after { content: ''; position: absolute; inset: 0; background: linear-gradient(transparent 45%, rgba(10,14,20,.85)); pointer-events: none; }
+  .portada .titulo { position: absolute; left: 20px; right: 20px; bottom: 14px; z-index: 1; }
+  .portada h2 { font-size: 28px; font-weight: 800; letter-spacing: -.02em; }
+  .portada .sinfoto { width: 100%; height: 100%; font-size: 64px; border-radius: 0; }
+  .cerrar { position: absolute; top: 14px; right: 14px; z-index: 2; width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid var(--borde); background: rgba(0,0,0,.35); backdrop-filter: blur(10px); font-size: 15px; cursor: pointer; }
+  .cuerpo { padding: 16px 20px 22px; display: flex; flex-direction: column; gap: 14px; }
+  ruby { ruby-position: over; } rt { font-size: 11px; color: var(--suave); }
+  .nombre-ja { font-size: 20px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .hablar { border: 1px solid var(--borde); background: rgba(255,255,255,.14); border-radius: 999px; padding: 4px 10px; cursor: pointer; font-size: 13px; }
+  .hablar:hover { background: rgba(255,255,255,.28); }
+  .etiquetas { display: flex; flex-wrap: wrap; gap: 6px; }
+  .etq { font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; background: var(--tenue); border: 1px solid rgba(255,255,255,.2); }
+  .bloque { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); border-radius: 18px; padding: 12px 14px; }
+  .bloque h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--suave); margin-bottom: 4px; }
+  .bloque p { font-size: 14.5px; line-height: 1.45; }
+  .palabra-sitio { display: flex; align-items: center; gap: 14px; }
+  .palabra-sitio .kanji { font-size: 44px; font-weight: 700; line-height: 1; }
+  #galeria { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; }
+  #galeria img { height: 120px; border-radius: 14px; scroll-snap-align: start; cursor: zoom-in; flex: none; box-shadow: 0 4px 14px rgba(0,0,0,.35); }
+  .acciones { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .boton { text-align: center; text-decoration: none; color: #fff; font-weight: 650; font-size: 14px; cursor: pointer;
+    padding: 12px; border-radius: 16px; border: 1px solid var(--borde); background: rgba(255,255,255,.16); }
+  .boton:hover { background: rgba(255,255,255,.3); }
+  .boton.grande { grid-column: 1 / -1; font-size: 15px; }
+  .boton.hecho { background: rgba(255,69,58,.35); border-color: rgba(255,120,110,.7); }
+
+  /* ---------- Hojas (Palabras, Quiz, Mochila, Pasaporte) ---------- */
+  .hoja { position: fixed; z-index: 1200; left: 50%; top: 16px; bottom: 100px; width: min(880px, calc(100vw - 32px));
+    transform: translate(-50%, 30px) scale(.97); opacity: 0; pointer-events: none; border-radius: var(--radio);
+    display: flex; flex-direction: column; overflow: hidden; transition: opacity .35s, transform .45s cubic-bezier(.2,.9,.3,1.1); }
+  .hoja.abierta { opacity: 1; transform: translate(-50%, 0) scale(1); pointer-events: auto; }
+  .hoja > header { padding: 22px 24px 12px; display: flex; justify-content: space-between; align-items: end; gap: 12px; flex-wrap: wrap; }
+  .hoja .contenido { flex: 1; overflow-y: auto; padding: 4px 24px 24px; }
+  .progreso { height: 8px; border-radius: 99px; background: rgba(255,255,255,.14); overflow: hidden; }
+  .progreso i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--T1), var(--rojo)); transition: width .5s; }
+
+  /* Palabras */
+  .pestañas { display: flex; gap: 6px; overflow-x: auto; padding: 0 24px 12px; }
+  .rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+  .tarjeta { position: relative; border-radius: 20px; padding: 14px; background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.16);
+    cursor: pointer; min-height: 132px; display: flex; flex-direction: column; gap: 4px; transition: transform .2s, background .2s; perspective: 800px; }
+  .tarjeta:hover { transform: translateY(-3px); background: rgba(255,255,255,.14); }
+  .tarjeta .emo { font-size: 22px; }
+  .tarjeta .escritura { font-size: 24px; font-weight: 700; line-height: 1.2; word-break: keep-all; }
+  .tarjeta .lectura { font-size: 13px; color: var(--suave); }
+  .tarjeta .es { font-size: 14px; font-weight: 600; margin-top: auto; }
+  .tarjeta.oculta .es, .tarjeta.oculta .romaji { filter: blur(7px); }
+  .tarjeta .romaji { font-size: 12px; color: var(--suave); font-style: italic; }
+  .tarjeta .estrella { position: absolute; top: 10px; right: 10px; border: 0; background: none; font-size: 18px; cursor: pointer; opacity: .5; }
+  .tarjeta .estrella.si { opacity: 1; }
+  .tarjeta .altavoz { position: absolute; top: 10px; right: 38px; border: 0; background: none; font-size: 17px; cursor: pointer; }
+  .del-dia { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 20px; margin-bottom: 14px;
+    background: linear-gradient(120deg, rgba(255,159,10,.28), rgba(191,90,242,.22)); border: 1px solid rgba(255,255,255,.25); }
+  .del-dia .kanji { font-size: 38px; font-weight: 800; }
+
+  /* Quiz */
+  .modos { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .modo { border-radius: 22px; padding: 18px; cursor: pointer; border: 1px solid rgba(255,255,255,.22); text-align: left;
+    background: linear-gradient(140deg, rgba(255,255,255,.16), rgba(255,255,255,.04)); transition: transform .2s; }
+  .modo:hover { transform: translateY(-3px) scale(1.01); }
+  .modo .emo { font-size: 34px; }
+  .modo b { display: block; font-size: 17px; margin-top: 8px; }
+  .modo small { color: var(--suave); font-size: 13px; }
+  .pregunta { text-align: center; padding: 10px 0 18px; }
+  .pregunta .grande { font-size: 52px; font-weight: 800; line-height: 1.15; }
+  .pregunta img { max-width: 100%; max-height: 300px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+  .opciones { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .opcion { padding: 16px; border-radius: 18px; border: 1px solid var(--borde); background: rgba(255,255,255,.12); cursor: pointer;
+    font-size: 16px; font-weight: 650; transition: background .2s, transform .15s; }
+  .opcion:hover { transform: scale(1.02); background: rgba(255,255,255,.2); }
+  .opcion.bien { background: rgba(48,209,88,.55); border-color: #30d158; }
+  .opcion.mal { background: rgba(255,69,58,.5); border-color: var(--rojo); }
+  .marcador { display: flex; gap: 14px; font-size: 14px; color: var(--suave); }
+  .marcador b { color: #fff; }
+  .explica { text-align: center; margin-top: 14px; font-size: 14px; color: var(--suave); min-height: 20px; }
+
+  /* Mochila */
+  .seccion-mochila h3 { font-size: 15px; margin: 16px 0 8px; }
+  .check { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; cursor: pointer; transition: background .2s; }
+  .check:hover { background: rgba(255,255,255,.08); }
+  .check .caja { width: 24px; height: 24px; border-radius: 8px; border: 2px solid var(--borde); display: grid; place-items: center; flex: none; font-size: 14px; }
+  .check.si .caja { background: #30d158; border-color: #30d158; }
+  .check.si .txt { opacity: .55; text-decoration: line-through; }
+  .check .jpn { font-size: 16px; font-weight: 700; }
+  .check small { color: var(--suave); }
+
+  /* Pasaporte */
+  .rango { font-size: 15px; font-weight: 700; padding: 8px 14px; border-radius: 999px; background: rgba(255,214,10,.2); border: 1px solid rgba(255,214,10,.6); }
+  .sellos { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .sello { border-radius: 20px; padding: 14px; text-align: center; background: rgba(255,255,255,.07); border: 1px dashed rgba(255,255,255,.3); cursor: pointer; transition: transform .2s; }
+  .sello:hover { transform: scale(1.03); }
+  .hanko { width: 86px; height: 86px; margin: 4px auto 10px; border-radius: 50%; display: grid; place-items: center; font-size: 30px; font-weight: 800;
+    border: 4px solid rgba(255,255,255,.25); color: rgba(255,255,255,.25); text-shadow: none; }
+  .sello.si { border-style: solid; border-color: rgba(255,69,58,.5); background: rgba(255,69,58,.1); }
+  .sello.si .hanko { border-color: var(--rojo); color: var(--rojo); background: rgba(255,255,255,.9); transform: rotate(-12deg); box-shadow: 0 4px 14px rgba(255,69,58,.4); }
+  .sello b { font-size: 13px; display: block; }
+  .sello small { font-size: 11px; color: var(--suave); }
+
+  /* ---------- Otros ---------- */
+  #capa { position: fixed; top: 16px; right: 16px; z-index: 900; border-radius: 999px; padding: 10px 16px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .marca { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-size: 19px;
+    border: 2px solid rgba(255,255,255,.95); box-shadow: 0 4px 14px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.6); transition: transform .25s; position: relative; }
+  .marca.sel { transform: scale(1.35); }
+  .marca .visto { position: absolute; right: -6px; top: -6px; font-size: 14px; }
+  .yo { width: 18px; height: 18px; border-radius: 50%; background: #0a84ff; border: 3px solid #fff; box-shadow: 0 0 0 8px rgba(10,132,255,.25); }
+  .leaflet-tooltip.cristal-tt { background: rgba(20,20,30,.6); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--borde); color: #fff; border-radius: 12px; font-family: inherit; font-weight: 600; box-shadow: none; }
+  .leaflet-tooltip.cristal-tt::before { display: none; }
+  .leaflet-control-zoom { display: none; }
+  .leaflet-control-attribution { background: rgba(0,0,0,.35) !important; color: #ddd !important; border-radius: 8px 0 0 0; }
+  .leaflet-control-attribution a { color: #fff !important; }
+  #visor { position: fixed; inset: 0; z-index: 3000; display: none; place-items: center; background: rgba(0,0,0,.6);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); cursor: zoom-out; }
+  #visor.abierto { display: grid; }
+  #visor img { max-width: 94vw; max-height: 90vh; border-radius: 22px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+  #aviso { position: fixed; top: 20px; left: 50%; transform: translate(-50%, -140%); z-index: 3000; padding: 12px 18px; border-radius: 18px;
+    font-weight: 650; transition: transform .45s cubic-bezier(.2,.9,.3,1.2); }
+  #aviso.visible { transform: translate(-50%, 0); }
+  .confeti { position: fixed; z-index: 3500; pointer-events: none; font-size: 26px; animation: caer 1.4s ease-out forwards; }
+  @keyframes caer { to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; } }
+
+  @media (max-width: 820px) {
+    #panel { top: auto; left: 10px; right: 10px; bottom: 92px; width: auto; height: 46vh; }
+    #ficha { left: 10px; right: 10px; top: 10px; bottom: 92px; width: auto; z-index: 1100; transform: translateY(calc(100% + 120px)); }
+    .hoja { top: 10px; bottom: 92px; }
+    #dock { bottom: 10px; }
+    #dock button { padding: 8px 9px; }
+    .opciones { grid-template-columns: 1fr; }
+    .pregunta .grande { font-size: 40px; }
+  }
+</style>
+</head>
+<body>
+<div id="mapa"></div>
+<button id="capa" class="cristal">🛰️ Satélite</button>
+
+<aside id="panel" class="cristal">
+  <header>
+    <h1>⛺ Yuru Camp△ <span class="jp">キャンプ場</span></h1>
+    <p class="sub" id="contador"></p>
+    <input id="buscar" type="search" placeholder="🔎 Busca un camping, kanji o personaje…" autocomplete="off">
+  </header>
+  <div id="filtros" class="fino"></div>
+  <div class="fila-orden"><span id="orden-txt">Orden del anime</span><button class="chip" id="cerca">📍 Cerca de mí</button></div>
+  <div id="lista" class="fino"></div>
+</aside>
+
+<section id="ficha" class="cristal fino" aria-live="polite"></section>
+
+<section class="hoja cristal" id="hoja-palabras">
+  <header>
+    <div><h1>📖 Palabras para acampar</h1><p class="sub" id="palabras-sub"></p></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="chip" id="modo-tarjeta">🙈 Ocultar significado</button>
+      <button class="chip" id="solo-estrella">⭐ Solo aprendidas</button>
+    </div>
+  </header>
+  <div class="pestañas fino" id="cats"></div>
+  <div class="contenido fino" id="palabras"></div>
+</section>
+
+<section class="hoja cristal" id="hoja-quiz">
+  <header><div><h1>🎯 Quiz ゆるキャン</h1><p class="sub" id="quiz-sub">Elige un juego</p></div><div class="marcador" id="marcador"></div></header>
+  <div class="contenido fino" id="quiz"></div>
+</section>
+
+<section class="hoja cristal" id="hoja-mochila">
+  <header><div><h1>🎒 Mochila de campista</h1><p class="sub" id="mochila-sub"></p></div><button class="chip" id="vaciar">🔄 Empezar de nuevo</button></header>
+  <div style="padding:0 24px 10px"><div class="progreso"><i id="mochila-barra"></i></div></div>
+  <div class="contenido fino" id="mochila"></div>
+</section>
+
+<section class="hoja cristal" id="hoja-pasaporte">
+  <header><div><h1>🏅 Pasaporte de campings</h1><p class="sub" id="pasaporte-sub"></p></div><span class="rango" id="rango"></span></header>
+  <div style="padding:0 24px 10px"><div class="progreso"><i id="pasaporte-barra"></i></div></div>
+  <div class="contenido fino"><div class="sellos" id="sellos"></div></div>
+</section>
+
+<nav id="dock" class="cristal">
+  <button data-vista="mapa" class="activo"><span>🗺️</span>Mapa</button>
+  <button data-vista="palabras"><span>📖</span>Palabras</button>
+  <button data-vista="quiz"><span>🎯</span>Quiz</button>
+  <button data-vista="mochila"><span>🎒</span>Mochila</button>
+  <button data-vista="pasaporte"><span>🏅</span>Pasaporte</button>
+</nav>
+
+<div id="visor"><img alt=""></div>
+<div id="aviso" class="cristal"></div>
+
+<script>
+if (typeof CAMPINGS === 'undefined' || typeof VOCABULARIO === 'undefined' || typeof L === 'undefined') {
+  document.body.innerHTML = '<p style="padding:40px">No se pudieron cargar los datos o el mapa (¿sin conexión?).</p>';
+  throw new Error('Faltan campings.js, vocabulario.js o Leaflet');
+}
+
+/* ================= Datos fijos ================= */
+// En el Mac se usan las capturas guardadas en fotos/; en la web pública, las del mapa de fans
+if (!['localhost', '127.0.0.1', ''].includes(location.hostname)) CAMPINGS.forEach(c => { c.fotos = c.fotos_web; });
+const COLORES = { T1: 'var(--T1)', T2: 'var(--T2)', T3: 'var(--T3)', 'Película': 'var(--Pel)' };
+const PERSONAJES = {
+  rin:       { emoji: '🛵', nombre: 'Rin',        ja: '志摩リン' },
+  nadeshiko: { emoji: '🍙', nombre: 'Nadeshiko',  ja: '各務原なでしこ' },
+  chiaki:    { emoji: '👓', nombre: 'Chiaki',     ja: '大垣千明' },
+  aoi:       { emoji: '🍳', nombre: 'Aoi',        ja: '犬山あおい' },
+  ena:       { emoji: '🐶', nombre: 'Ena',        ja: '斉藤恵那' },
+  ayano:     { emoji: '🏍️', nombre: 'Ayano',      ja: '土岐綾乃' },
+  sakura:    { emoji: '🚗', nombre: 'Sakura',     ja: '各務原桜' },
+  toba:      { emoji: '🚐', nombre: 'Toba-sensei', ja: '鳥羽美波' },
+};
+const PAISAJES = { lago: '🏞️ Lago', mar: '🌊 Mar', 'montaña': '⛰️ Montaña', 'río': '💧 Río', bosque: '🌲 Bosque', meseta: '🌾 Meseta', pradera: '🌿 Pradera' };
+const ESTACIONES = { 'otoño': '🍁 Otoño', invierno: '❄️ Invierno', primavera: '🌸 Primavera', verano: '☀️ Verano' };
+const RANGOS = [[0, '🏠 Novata de へやキャン'], [1, '🔥 Encendiste la primera hoguera'], [3, '🏕️ Miembro del 野クル'],
+  [6, '🛵 Campista solitaria como Rin'], [10, '🗻 Cazadora de Fujis'], [15, '🎖️ Maestra ゆるキャン'], [CAMPINGS.length, '👑 Leyenda de Yamanashi']];
+const MOCHILA = [
+  { titulo: '🛌 Dormir', cosas: [['テント', 'tienda'], ['寝袋', 'saco de dormir'], ['マット', 'esterilla'], ['枕', 'almohada (まくら)']] },
+  { titulo: '🔥 Fuego y cocina', cosas: [['焚き火台', 'brasero'], ['薪', 'leña'], ['着火剤', 'pastilla de encendido'], ['バーナー', 'hornillo'],
+      ['ガス缶', 'cartucho de gas'], ['鍋', 'olla'], ['カップ麺', 'fideos instantáneos, por si acaso (como Rin)'], ['割り箸', 'palillos']] },
+  { titulo: '🧥 Ropa y frío', cosas: [['防寒着', 'ropa de abrigo'], ['カイロ', 'calentadores'], ['軍手', 'guantes'], ['雨具', 'ropa de lluvia']] },
+  { titulo: '🔦 Luz y montaje', cosas: [['ランタン', 'farol'], ['ヘッドライト', 'linterna frontal'], ['ペグ', 'piquetas'], ['ハンマー', 'martillo'], ['電池', 'pilas']] },
+  { titulo: '🧭 Viaje', cosas: [['地図', 'mapa (sin cobertura en la montaña)'], ['水筒', 'cantimplora'], ['ゴミ袋', 'bolsa de basura (ごみぶくろ)'], ['予約確認', 'confirmación de la reserva (よやくかくにん)']] },
+];
+const TODAS_PALABRAS = VOCABULARIO.flatMap(c => c.palabras.map(p => ({ es: p[3], w: p[0], kana: p[1], romaji: p[2], emoji: p[4], cat: c.id })));
+
+/* ================= Memoria local (solo comodidad; si falla, la app sigue) ================= */
+const guardado = (() => {
+  const leer = (k, def) => { try { return JSON.parse(localStorage.getItem('yc_' + k)) ?? def; } catch { return def; } };
+  const escribir = (k, v) => { try { localStorage.setItem('yc_' + k, JSON.stringify(v)); } catch {} };
+  return { leer, escribir };
+})();
+const visitados = new Set(guardado.leer('visitados', []));
+const aprendidas = new Set(guardado.leer('aprendidas', []));
+const mochila = new Set(guardado.leer('mochila', []));
+
+/* ================= Utilidades ================= */
+const $ = s => document.querySelector(s);
+const baraja = a => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let vozJa = null;
+function cargarVoz() { vozJa = speechSynthesis.getVoices().find(v => v.lang.startsWith('ja')) || null; }
+if ('speechSynthesis' in window) { cargarVoz(); speechSynthesis.onvoiceschanged = cargarVoz; }
+function hablar(texto) {
+  if (!('speechSynthesis' in window)) return avisar('Tu navegador no puede leer en voz alta');
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(texto); u.lang = 'ja-JP'; u.rate = .9; if (vozJa) u.voice = vozJa;
+  speechSynthesis.speak(u);
+}
+let temporizadorAviso;
+function avisar(txt) { const a = $('#aviso'); a.textContent = txt; a.classList.add('visible'); clearTimeout(temporizadorAviso); temporizadorAviso = setTimeout(() => a.classList.remove('visible'), 2600); }
+function confeti(emojis = ['🎉', '⭐', '🏕️', '🔥', '🗻', '🌸']) {
+  for (let i = 0; i < 26; i++) {
+    const e = document.createElement('div'); e.className = 'confeti'; e.textContent = emojis[i % emojis.length];
+    e.style.left = innerWidth / 2 + 'px'; e.style.top = innerHeight / 2 + 'px';
+    e.style.setProperty('--dx', (Math.random() - .5) * innerWidth * .9 + 'px');
+    e.style.setProperty('--dy', (Math.random() - .7) * innerHeight * .8 + 'px');
+    e.style.setProperty('--rot', (Math.random() - .5) * 720 + 'deg');
+    document.body.appendChild(e); setTimeout(() => e.remove(), 1500);
+  }
+}
+function km(a, b) {
+  const R = 6371, r = x => x * Math.PI / 180, dLat = r(b[0] - a[0]), dLng = r(b[1] - a[1]);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(r(a[0])) * Math.cos(r(b[0])) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+function ruby(ja, kana) {
+  // Furigana sobre todo el nombre; los nombres mezclan kanji y katakana y no se pueden alinear carácter a carácter sin diccionario
+  return /[一-龯]/.test(ja) ? `<ruby class="jp">${esc(ja)}<rt>${esc(kana)}</rt></ruby>` : `<span class="jp">${esc(ja)}</span>`;
+}
+
+/* ================= Mapa ================= */
+let seleccionado = null;
+const mapa = L.map('mapa', { zoomControl: false }).setView([35.4, 138.4], 8);
+const pie = 'Capturas: ©あfろ・芳文社／野外活動委員会';
+const satelite = L.layerGroup([
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imágenes © Esri · ' + pie }),
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }),
+]);
+const topo = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Mapa © Esri · ' + pie });
+satelite.addTo(mapa);
+let enSatelite = true;
+$('#capa').onclick = e => {
+  enSatelite = !enSatelite;
+  mapa.removeLayer(enSatelite ? topo : satelite); (enSatelite ? satelite : topo).addTo(mapa);
+  e.currentTarget.textContent = enSatelite ? '🛰️ Satélite' : '🗺️ Topográfico';
+};
+
+const marcadores = CAMPINGS.map((c, i) => L.marker([c.lat, c.lng], { icon: iconoDe(i) })
+  .bindTooltip(`${c.nombre} · ${c.ja}`, { className: 'cristal-tt', direction: 'top', offset: [0, -20] })
+  .on('click', () => abrirFicha(i)));
+function iconoDe(i) {
+  const c = CAMPINGS[i];
+  return L.divIcon({ className: '', iconSize: [40, 40], iconAnchor: [20, 20],
+    html: `<div class="marca ${i === seleccionado ? 'sel' : ''}" style="background:${COLORES[c.temporada]}">⛺${visitados.has(i) ? '<span class="visto">💮</span>' : ''}</div>` });
+}
+function refrescarIcono(i) { marcadores[i].setIcon(iconoDe(i)); }
+
+/* ================= Filtros ================= */
+const filtro = { temporada: 'todas', quien: 'todas', paisaje: 'todas', estacion: 'todas', extra: 'todas', texto: '' };
+const GRUPOS = [
+  ['temporada', { todas: '✨ Todas', T1: '🟠 Temporada 1', T2: '🟣 Temporada 2', T3: '🔵 Temporada 3', 'Película': '🟢 Película' }],
+  ['quien', { todas: '👥 Todas', ...Object.fromEntries(Object.entries(PERSONAJES).map(([k, p]) => [k, `${p.emoji} ${p.nombre}`])) }],
+  ['paisaje', { todas: '🧭 Cualquier paisaje', ...PAISAJES }],
+  ['estacion', { todas: '📅 Cualquier estación', ...ESTACIONES }],
+  ['extra', { todas: '⭐ Todo', fuji: '🗻 Se ve el Fuji', solo: '🧍 Acampada en solitario', grupo: '👯 En grupo', comida: '🍲 Con comida del anime', visto: '💮 Ya visitados', pendiente: '🎯 Por visitar' }],
+];
+function pasa(c, i) {
+  if (filtro.temporada !== 'todas' && c.temporada !== filtro.temporada) return false;
+  if (filtro.quien !== 'todas' && !c.quien.includes(filtro.quien)) return false;
+  if (filtro.paisaje !== 'todas' && !c.paisaje.includes(filtro.paisaje)) return false;
+  if (filtro.estacion !== 'todas' && c.estacion !== filtro.estacion) return false;
+  const e = filtro.extra;
+  if (e === 'fuji' && !c.fuji) return false;
+  if (e === 'solo' && c.quien.filter(q => !['sakura', 'toba'].includes(q)).length !== 1) return false;
+  if (e === 'grupo' && c.quien.length < 2) return false;
+  if (e === 'comida' && c.comida === '—') return false;
+  if (e === 'visto' && !visitados.has(i)) return false;
+  if (e === 'pendiente' && visitados.has(i)) return false;
+  if (filtro.texto) {
+    const t = filtro.texto.toLowerCase();
+    const hay = [c.nombre, c.ja, c.kana, c.porque, c.comida, ...c.quien.map(q => PERSONAJES[q].nombre + PERSONAJES[q].ja)].join(' ').toLowerCase();
+    if (!hay.includes(t)) return false;
+  }
+  return true;
+}
+function pintarFiltros() {
+  $('#filtros').innerHTML = GRUPOS.map(([g, ops]) => `<div class="grupo">${Object.entries(ops).map(([k, v]) =>
+    `<button class="chip ${filtro[g] === k ? 'activo' : ''}" data-g="${g}" data-k="${esc(k)}">${esc(v)}</button>`).join('')}</div>`).join('');
+  document.querySelectorAll('#filtros .chip').forEach(b => b.onclick = () => { filtro[b.dataset.g] = b.dataset.k; actualizarMapa(true); });
+}
+let miPosicion = null;
+function visibles() {
+  const idx = CAMPINGS.map((c, i) => i).filter(i => pasa(CAMPINGS[i], i));
+  if (miPosicion) idx.sort((a, b) => km(miPosicion, [CAMPINGS[a].lat, CAMPINGS[a].lng]) - km(miPosicion, [CAMPINGS[b].lat, CAMPINGS[b].lng]));
+  return idx;
+}
+function pintarLista(idx) {
+  $('#contador').textContent = `${idx.length} de ${CAMPINGS.length} campings · 💮 ${visitados.size} visitados`;
+  $('#lista').innerHTML = idx.length ? idx.map(i => {
+    const c = CAMPINGS[i];
+    const mini = c.fotos[0] ? `<img src="${c.fotos[0]}" alt="" loading="lazy">` : '<div class="sinfoto">⛺</div>';
+    const dist = miPosicion ? ` · ${Math.round(km(miPosicion, [c.lat, c.lng]))} km` : '';
+    return `<div class="item ${i === seleccionado ? 'sel' : ''}" data-i="${i}">${mini}${visitados.has(i) ? '<span class="sello-mini">💮</span>' : ''}
+      <div><b>${esc(c.nombre)} <span class="jp" style="font-weight:400;color:var(--suave);font-size:12px">${esc(c.ja.split(' ')[0])}</span></b>
+      <small><span class="punto" style="background:${COLORES[c.temporada]}"></span>${esc(c.ep)} · ${c.quien.map(q => PERSONAJES[q].emoji).join('')}${dist}</small></div></div>`;
+  }).join('') : '<div class="vacia">🏕️ Ningún camping cumple estos filtros.<br>Prueba a quitar alguno.</div>';
+  document.querySelectorAll('.item').forEach(el => el.onclick = () => abrirFicha(+el.dataset.i));
+}
+function actualizarMapa(encuadrar) {
+  const idx = visibles(), vis = new Set(idx);
+  marcadores.forEach((m, i) => vis.has(i) ? m.addTo(mapa) : mapa.removeLayer(m));
+  pintarFiltros(); pintarLista(idx);
+  if (encuadrar && idx.length) {
+    const puntos = idx.map(i => [CAMPINGS[i].lat, CAMPINGS[i].lng]);
+    if (miPosicion) puntos.push(miPosicion);
+    mapa.flyToBounds(puntos, { paddingTopLeft: innerWidth > 820 ? [400, 60] : [40, 40], paddingBottomRight: [60, 120], maxZoom: 12, duration: .8 });
+  }
+}
+$('#buscar').oninput = e => { filtro.texto = e.target.value.trim(); actualizarMapa(false); };
+
+let marcaYo = null;
+$('#cerca').onclick = () => {
+  if (!navigator.geolocation) return avisar('Este navegador no da tu ubicación');
+  avisar('📍 Buscando dónde estás…');
+  navigator.geolocation.getCurrentPosition(p => {
+    miPosicion = [p.coords.latitude, p.coords.longitude];
+    if (marcaYo) mapa.removeLayer(marcaYo);
+    marcaYo = L.marker(miPosicion, { icon: L.divIcon({ className: '', html: '<div class="yo"></div>', iconSize: [18, 18] }) }).addTo(mapa).bindTooltip('Tú', { className: 'cristal-tt' });
+    $('#orden-txt').textContent = 'Ordenados por distancia';
+    $('#cerca').classList.add('activo');
+    const i = visibles()[0];
+    avisar(`🏕️ El más cercano: ${CAMPINGS[i].nombre}, a ${Math.round(km(miPosicion, [CAMPINGS[i].lat, CAMPINGS[i].lng]))} km`);
+    actualizarMapa(true);
+  }, err => avisar('No he podido saber tu ubicación: ' + (err.code === 1 ? 'permiso denegado' : 'sin señal')), { enableHighAccuracy: true, timeout: 12000 });
+};
+
+/* ================= Ficha ================= */
+function abrirFicha(i) {
+  const antes = seleccionado; seleccionado = i;
+  if (antes !== null) refrescarIcono(antes);
+  refrescarIcono(i);
+  const c = CAMPINGS[i];
+  const portada = c.fotos[0] ? `<img src="${c.fotos[0]}" alt="Escena del anime en ${esc(c.nombre)}" data-grande>` : '<div class="sinfoto">🎬</div>';
+  const dist = miPosicion ? `<span class="etq">📍 a ${Math.round(km(miPosicion, [c.lat, c.lng]))} km de ti</span>` : '';
+  const [pk, pkana, pes] = c.palabra;
+  $('#ficha').innerHTML = `
+    <div class="portada">${portada}<button class="cerrar" id="f-cerrar" aria-label="Cerrar">✕</button>
+      <div class="titulo"><div class="etq" style="display:inline-block;background:${COLORES[c.temporada]};border:0;text-shadow:none;color:#111">${esc(c.ep)}</div><h2>${esc(c.nombre)}</h2></div></div>
+    <div class="cuerpo">
+      <div class="nombre-ja">${ruby(c.ja, c.kana)} <button class="hablar" data-decir="${esc(c.kana)}">🔊 Escuchar</button></div>
+      <div class="etiquetas">
+        ${c.quien.map(q => `<span class="etq">${PERSONAJES[q].emoji} ${PERSONAJES[q].nombre} <span class="jp" style="opacity:.7">${PERSONAJES[q].ja}</span></span>`).join('')}
+      </div>
+      <div class="etiquetas">
+        ${c.paisaje.map(p => `<span class="etq">${PAISAJES[p]}</span>`).join('')}
+        <span class="etq">${ESTACIONES[c.estacion]}</span>
+        ${c.fuji ? '<span class="etq">🗻 Vista del Fuji</span>' : ''}${dist}
+      </div>
+      <div class="bloque"><h4>🎬 Por qué van</h4><p>${esc(c.porque)}</p></div>
+      <div class="bloque"><h4>💡 Lo que aprenden</h4><p>${esc(c.leccion)}</p></div>
+      ${c.comida !== '—' ? `<div class="bloque"><h4>🍲 Qué comen</h4><p class="jp">${esc(c.comida)}</p></div>` : ''}
+      <div class="bloque"><h4>🧭 El sitio real</h4><p>${esc(c.real)}</p></div>
+      <div class="bloque palabra-sitio"><div class="kanji jp">${esc(pk)}</div>
+        <div style="flex:1"><h4>🈁 Palabra de este camping</h4><p><b class="jp">${esc(pkana)}</b> — ${esc(pes)}</p></div>
+        <button class="hablar" data-decir="${esc(pkana)}">🔊</button></div>
+      ${c.fotos.length > 1 ? `<div><h4 style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--suave);margin-bottom:8px">📸 Escenas del anime (${c.fotos.length})</h4>
+        <div id="galeria" class="fino">${c.fotos.map(f => `<img src="${f}" alt="" data-grande loading="lazy">`).join('')}</div></div>`
+        : (c.fotos.length ? '' : '<p class="sub">Sale en la película; el mapa de fans no tiene capturas de este sitio.</p>')}
+      <div class="acciones">
+        <button class="boton grande ${visitados.has(i) ? 'hecho' : ''}" id="f-visto">${visitados.has(i) ? '💮 ¡Sellado! Estuviste aquí' : '📍 Estuve aquí — sellar pasaporte'}</button>
+        <a class="boton" href="https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}" target="_blank" rel="noopener">🗺️ Google Maps</a>
+        <a class="boton" href="https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}" target="_blank" rel="noopener">🚗 Cómo llegar</a>
+      </div>
+    </div>`;
+  $('#ficha').scrollTop = 0;
+  $('#ficha').classList.add('abierta');
+  $('#f-cerrar').onclick = cerrarFicha;
+  $('#f-visto').onclick = () => alternarVisita(i);
+  $('#ficha').querySelectorAll('[data-decir]').forEach(b => b.onclick = () => hablar(b.dataset.decir));
+  $('#ficha').querySelectorAll('[data-grande]').forEach(img => img.onclick = () => verGrande(img.src));
+  pintarLista(visibles());
+  mapa.flyTo([c.lat, c.lng], 14, { duration: 1 });
+}
+function cerrarFicha() {
+  $('#ficha').classList.remove('abierta');
+  const antes = seleccionado; seleccionado = null;
+  if (antes !== null) refrescarIcono(antes);
+  pintarLista(visibles());
+}
+function alternarVisita(i) {
+  const rangoAntes = rangoActual();
+  visitados.has(i) ? visitados.delete(i) : visitados.add(i);
+  guardado.escribir('visitados', [...visitados]);
+  refrescarIcono(i);
+  if (visitados.has(i)) {
+    confeti(['💮', '🏕️', '⛺', '🔥']);
+    const r = rangoActual();
+    avisar(r !== rangoAntes ? `🎖️ ¡Nuevo rango: ${r}!` : `💮 Sello de ${CAMPINGS[i].nombre} conseguido`);
+  }
+  if (seleccionado === i) abrirFicha(i);
+  pintarPasaporte();
+}
+
+/* ================= Palabras ================= */
+let categoria = 'todas', ocultar = false, soloEstrella = false;
+function pintarPalabras() {
+  $('#cats').innerHTML = [['todas', '✨ Todas'], ...VOCABULARIO.map(c => [c.id, `${c.emoji} ${c.titulo}`])]
+    .map(([k, v]) => `<button class="chip ${categoria === k ? 'activo' : ''}" data-c="${k}">${v}</button>`).join('');
+  document.querySelectorAll('#cats .chip').forEach(b => b.onclick = () => { categoria = b.dataset.c; pintarPalabras(); });
+  const lista = TODAS_PALABRAS.filter(p => (categoria === 'todas' || p.cat === categoria) && (!soloEstrella || aprendidas.has(p.w)));
+  $('#palabras-sub').textContent = `${TODAS_PALABRAS.length} palabras y frases · ⭐ ${aprendidas.size} aprendidas · toca 🔊 para oírlas`;
+  const hoy = TODAS_PALABRAS[Math.floor(Date.now() / 864e5) % TODAS_PALABRAS.length];
+  $('#palabras').innerHTML = `
+    <div class="del-dia"><div class="kanji jp">${esc(hoy.w)}</div><div style="flex:1"><h4 style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--suave)">☀️ Palabra del día</h4>
+      <p><b class="jp">${esc(hoy.kana)}</b> · <i>${esc(hoy.romaji)}</i> — ${esc(hoy.es)} ${hoy.emoji}</p></div><button class="hablar" data-decir="${esc(hoy.w)}">🔊</button></div>
+    ${lista.length ? '' : '<div class="vacia">Todavía no has marcado ninguna con ⭐</div>'}
+    <div class="rejilla">${lista.map(p => `
+      <div class="tarjeta ${ocultar ? 'oculta' : ''}" data-w="${esc(p.w)}">
+        <button class="altavoz" data-decir="${esc(p.w)}" title="Escuchar">🔊</button>
+        <button class="estrella ${aprendidas.has(p.w) ? 'si' : ''}" data-e="${esc(p.w)}" title="Marcar como aprendida">${aprendidas.has(p.w) ? '⭐' : '☆'}</button>
+        <div class="emo">${p.emoji}</div>
+        <div class="escritura jp">${esc(p.w)}</div>
+        ${p.kana !== p.w ? `<div class="lectura jp">${esc(p.kana)}</div>` : ''}
+        <div class="romaji">${esc(p.romaji)}</div>
+        <div class="es">${esc(p.es)}</div>
+      </div>`).join('')}</div>`;
+  $('#palabras').querySelectorAll('[data-decir]').forEach(b => b.onclick = e => { e.stopPropagation(); hablar(b.dataset.decir); });
+  $('#palabras').querySelectorAll('[data-e]').forEach(b => b.onclick = e => {
+    e.stopPropagation(); const w = b.dataset.e;
+    aprendidas.has(w) ? aprendidas.delete(w) : (aprendidas.add(w), aprendidas.size % 10 === 0 && (confeti(['⭐', '🈁', '🎌']), avisar(`⭐ ¡${aprendidas.size} palabras aprendidas!`)));
+    guardado.escribir('aprendidas', [...aprendidas]); pintarPalabras();
+  });
+  $('#palabras').querySelectorAll('.tarjeta').forEach(t => t.onclick = () => { t.classList.toggle('oculta'); if (!t.classList.contains('oculta')) hablar(t.dataset.w); });
+}
+$('#modo-tarjeta').onclick = e => { ocultar = !ocultar; e.currentTarget.classList.toggle('activo', ocultar); pintarPalabras(); };
+$('#solo-estrella').onclick = e => { soloEstrella = !soloEstrella; e.currentTarget.classList.toggle('activo', soloEstrella); pintarPalabras(); };
+
+/* ================= Quiz ================= */
+const MODOS = {
+  ja_es:   { emoji: '🈁', titulo: 'Japonés → español', desc: 'Lee la palabra y elige qué significa' },
+  es_ja:   { emoji: '🇪🇸', titulo: 'Español → japonés', desc: 'Encuentra cómo se dice en japonés' },
+  oido:    { emoji: '👂', titulo: 'Escucha el GPS', desc: 'Oye la frase del navegador o la señal y adivina' },
+  camping: { emoji: '🖼️', titulo: '¿Qué camping es?', desc: 'Mira la captura del anime y adivina el sitio' },
+  quien:   { emoji: '👧', titulo: '¿Quién acampa aquí?', desc: 'Adivina quién acampa en cada sitio' },
+  kanji:   { emoji: '⛩️', titulo: 'Lee el camping', desc: 'Elige la lectura correcta del nombre en kanji' },
+};
+let partida = null;
+const record = guardado.leer('records', {});
+function pintarMenuQuiz() {
+  partida = null;
+  $('#quiz-sub').textContent = 'Elige un juego · 10 preguntas cada uno';
+  $('#marcador').innerHTML = '';
+  $('#quiz').innerHTML = `<div class="modos">${Object.entries(MODOS).map(([k, m]) => `
+    <button class="modo" data-m="${k}"><div class="emo">${m.emoji}</div><b>${m.titulo}</b><small>${m.desc}</small>
+    ${record[k] != null ? `<div class="sub" style="margin-top:8px">🏆 Récord: ${record[k]}/10</div>` : ''}</button>`).join('')}</div>`;
+  document.querySelectorAll('.modo').forEach(b => b.onclick = () => empezarQuiz(b.dataset.m));
+}
+function preguntaDe(modo) {
+  const conFoto = CAMPINGS.filter(c => c.fotos.length);
+  const distintas = (bien, todos, clave) => baraja([bien, ...baraja(todos.filter(x => clave(x) !== clave(bien))).filter((x, i, a) => a.findIndex(y => clave(y) === clave(x)) === i).slice(0, 3)]);
+  if (modo === 'ja_es' || modo === 'es_ja' || modo === 'oido') {
+    const fuente = modo === 'oido' ? TODAS_PALABRAS.filter(p => ['gps', 'carretera'].includes(p.cat)) : TODAS_PALABRAS;
+    const bien = fuente[Math.floor(Math.random() * fuente.length)];
+    const ops = distintas(bien, fuente, p => p.es);
+    if (modo === 'es_ja') return { enunciado: `<div class="grande" style="font-size:34px">${bien.emoji} ${esc(bien.es)}</div>`, ops: ops.map(p => ({ txt: `<span class="jp">${esc(p.w)}</span>`, ok: p === bien })), decir: bien.w, explica: `${bien.w} · ${bien.kana} · ${bien.romaji}` };
+    if (modo === 'oido') return { enunciado: `<button class="boton" data-repetir style="font-size:20px;padding:22px 34px">🔊 Escuchar otra vez</button>`, alEmpezar: () => hablar(bien.w), ops: ops.map(p => ({ txt: esc(p.es), ok: p === bien })), decir: bien.w, explica: `${bien.w} · ${bien.romaji}` };
+    return { enunciado: `<div class="grande jp">${esc(bien.w)}</div><div class="sub jp" style="font-size:16px">${bien.kana !== bien.w ? esc(bien.kana) : ''}</div>`, ops: ops.map(p => ({ txt: esc(p.es), ok: p === bien })), decir: bien.w, explica: `${bien.romaji} — ${bien.es}` };
+  }
+  if (modo === 'camping') {
+    const bien = conFoto[Math.floor(Math.random() * conFoto.length)];
+    const foto = bien.fotos[Math.floor(Math.random() * bien.fotos.length)];
+    return { enunciado: `<img src="${foto}" alt="Captura del anime">`, ops: distintas(bien, conFoto, c => c.nombre).map(c => ({ txt: esc(c.nombre), ok: c === bien })), explica: `${bien.nombre} · ${bien.ja} · ${bien.ep}`, decir: bien.kana };
+  }
+  if (modo === 'kanji') {
+    const conKanji = CAMPINGS.filter(c => /[一-龯]/.test(c.ja));
+    const bien = conKanji[Math.floor(Math.random() * conKanji.length)];
+    return { enunciado: `<div class="grande jp" style="font-size:38px">${esc(bien.ja)}</div>`, ops: distintas(bien, conKanji, c => c.kana).map(c => ({ txt: `<span class="jp">${esc(c.kana)}</span>`, ok: c === bien })), explica: `${bien.nombre} · ${bien.ep}`, decir: bien.kana };
+  }
+  // quien: un personaje que sí acampa ahí y tres que no
+  const bien = CAMPINGS[Math.floor(Math.random() * CAMPINGS.length)];
+  const si = bien.quien[Math.floor(Math.random() * bien.quien.length)];
+  const no = baraja(Object.keys(PERSONAJES).filter(p => !bien.quien.includes(p))).slice(0, 3);
+  if (no.length < 3) return preguntaDe(modo);
+  const foto = bien.fotos[0] ? `<img src="${bien.fotos[0]}" alt="" style="max-height:200px"><br>` : '';
+  return { enunciado: `${foto}<div style="font-size:24px;font-weight:800;margin-top:10px">${esc(bien.nombre)}</div><div class="sub">${esc(bien.ep)} · ¿quién está en esta acampada?</div>`,
+    ops: baraja([si, ...no]).map(p => ({ txt: `${PERSONAJES[p].emoji} ${PERSONAJES[p].nombre}`, ok: p === si })), explica: `Acampan: ${bien.quien.map(q => PERSONAJES[q].nombre).join(', ')}` };
+}
+function empezarQuiz(modo) { partida = { modo, n: 0, puntos: 0, racha: 0 }; siguientePregunta(); }
+function siguientePregunta() {
+  const p = partida;
+  if (p.n === 10) return finQuiz();
+  p.n++;
+  const q = preguntaDe(p.modo);
+  $('#quiz-sub').textContent = `${MODOS[p.modo].emoji} ${MODOS[p.modo].titulo}`;
+  $('#marcador').innerHTML = `<span>Pregunta <b>${p.n}/10</b></span><span>Aciertos <b>${p.puntos}</b></span><span>🔥 <b>${p.racha}</b></span>`;
+  $('#quiz').innerHTML = `<div class="pregunta">${q.enunciado}</div>
+    <div class="opciones">${q.ops.map((o, i) => `<button class="opcion" data-i="${i}">${o.txt}</button>`).join('')}</div>
+    <div class="explica" id="explica"></div>
+    <div style="text-align:center;margin-top:14px"><button class="chip" id="salir">↩︎ Volver a los juegos</button></div>`;
+  $('#salir').onclick = pintarMenuQuiz;
+  const rep = $('#quiz [data-repetir]'); if (rep) rep.onclick = q.alEmpezar;
+  if (q.alEmpezar) setTimeout(q.alEmpezar, 250);
+  document.querySelectorAll('.opcion').forEach(b => b.onclick = () => {
+    if (b.parentElement.dataset.hecho) return;
+    b.parentElement.dataset.hecho = 1;
+    const ok = q.ops[+b.dataset.i].ok;
+    document.querySelectorAll('.opcion').forEach((x, i) => q.ops[i].ok && x.classList.add('bien'));
+    if (ok) { p.puntos++; p.racha++; if (p.racha % 3 === 0) confeti(['🔥', '⭐']); }
+    else { b.classList.add('mal'); p.racha = 0; }
+    $('#explica').innerHTML = `${ok ? '✅ ¡Bien!' : '❌ Casi.'} <span class="jp">${esc(q.explica)}</span>`;
+    if (q.decir) hablar(q.decir);
+    $('#marcador').innerHTML = `<span>Pregunta <b>${p.n}/10</b></span><span>Aciertos <b>${p.puntos}</b></span><span>🔥 <b>${p.racha}</b></span>`;
+    setTimeout(siguientePregunta, ok ? 1500 : 2600);
+  });
+}
+function finQuiz() {
+  const p = partida, antes = record[p.modo];
+  const nuevo = antes == null || p.puntos > antes;
+  if (nuevo) { record[p.modo] = p.puntos; guardado.escribir('records', record); }
+  const frase = p.puntos === 10 ? '👑 ¡Perfecto! Rin estaría orgullosa' : p.puntos >= 7 ? '🏕️ ¡Muy bien, campista!' : p.puntos >= 4 ? '🔥 Vas encendiendo la hoguera' : '🍜 Tómate unos カレーめん y otra vez';
+  if (p.puntos >= 7) confeti();
+  $('#quiz').innerHTML = `<div class="pregunta"><div class="grande">${p.puntos}/10</div><p style="font-size:20px;margin-top:10px">${frase}</p>
+    ${nuevo ? '<p class="sub" style="margin-top:6px">🏆 ¡Nuevo récord!</p>' : `<p class="sub">Récord: ${antes}/10</p>`}</div>
+    <div class="opciones"><button class="opcion" id="otra">🔁 Otra ronda</button><button class="opcion" id="menu">🎯 Otros juegos</button></div>`;
+  $('#otra').onclick = () => empezarQuiz(p.modo); $('#menu').onclick = pintarMenuQuiz;
+}
+
+/* ================= Mochila ================= */
+function pintarMochila() {
+  const total = MOCHILA.reduce((n, s) => n + s.cosas.length, 0);
+  const hechas = MOCHILA.flatMap(s => s.cosas.map(c => c[0])).filter(w => mochila.has(w)).length;
+  $('#mochila-sub').textContent = hechas === total ? '✅ ¡Todo listo! Rin aprobaría esta mochila' : `${hechas} de ${total} cosas · toca cada una al meterla (y oye cómo se dice)`;
+  $('#mochila-barra').style.width = (hechas / total * 100) + '%';
+  $('#mochila').innerHTML = MOCHILA.map(s => `<div class="seccion-mochila"><h3>${s.titulo}</h3>${s.cosas.map(([w, es]) =>
+    `<div class="check ${mochila.has(w) ? 'si' : ''}" data-w="${esc(w)}"><div class="caja">${mochila.has(w) ? '✓' : ''}</div>
+      <div class="txt"><span class="jpn jp">${esc(w)}</span> <small>· ${esc(es)}</small></div></div>`).join('')}</div>`).join('');
+  document.querySelectorAll('.check').forEach(el => el.onclick = () => {
+    const w = el.dataset.w, estaba = mochila.has(w);
+    estaba ? mochila.delete(w) : (mochila.add(w), hablar(w));
+    guardado.escribir('mochila', [...mochila]);
+    pintarMochila();
+    if (!estaba && mochila.size === total) { confeti(['🎒', '⛺', '✅']); avisar('🎒 ¡Mochila completa! A la montaña'); }
+  });
+}
+$('#vaciar').onclick = () => { mochila.clear(); guardado.escribir('mochila', []); pintarMochila(); };
+
+/* ================= Pasaporte ================= */
+function rangoActual() { return RANGOS.filter(([n]) => visitados.size >= n).pop()[1]; }
+function pintarPasaporte() {
+  const sig = RANGOS.find(([n]) => n > visitados.size);
+  $('#rango').textContent = rangoActual();
+  $('#pasaporte-sub').textContent = `${visitados.size} de ${CAMPINGS.length} sellos` + (sig ? ` · te faltan ${sig[0] - visitados.size} para «${sig[1]}»` : ' · ¡los tienes todos!');
+  $('#pasaporte-barra').style.width = (visitados.size / CAMPINGS.length * 100) + '%';
+  $('#sellos').innerHTML = CAMPINGS.map((c, i) => `<div class="sello ${visitados.has(i) ? 'si' : ''}" data-i="${i}">
+    <div class="hanko jp">${esc([...c.ja.replace(/キャンプ場|キャンプサイト|キャンプ/g, '')][0])}</div>
+    <b>${esc(c.nombre)}</b><small>${esc(c.ep)}</small></div>`).join('');
+  document.querySelectorAll('.sello').forEach(s => s.onclick = () => { irA('mapa'); abrirFicha(+s.dataset.i); });
+}
+
+/* ================= Navegación del dock ================= */
+function irA(vista) {
+  document.querySelectorAll('#dock button').forEach(b => b.classList.toggle('activo', b.dataset.vista === vista));
+  document.querySelectorAll('.hoja').forEach(h => h.classList.toggle('abierta', h.id === 'hoja-' + vista));
+  const enMapa = vista === 'mapa';
+  $('#panel').style.opacity = enMapa ? 1 : 0; $('#panel').style.pointerEvents = enMapa ? '' : 'none';
+  if (!enMapa) $('#ficha').classList.remove('abierta');
+  if (vista === 'palabras') pintarPalabras();
+  if (vista === 'quiz') pintarMenuQuiz();
+  if (vista === 'mochila') pintarMochila();
+  if (vista === 'pasaporte') pintarPasaporte();
+}
+document.querySelectorAll('#dock button').forEach(b => b.onclick = () => irA(b.dataset.vista));
+
+const visor = $('#visor');
+function verGrande(src) { visor.querySelector('img').src = src; visor.classList.add('abierto'); }
+visor.onclick = () => visor.classList.remove('abierto');
+addEventListener('keydown', e => { if (e.key === 'Escape') { visor.classList.contains('abierto') ? visor.classList.remove('abierto') : cerrarFicha(); } });
+
+actualizarMapa(true);
+</script>
+</body>
+</html>
