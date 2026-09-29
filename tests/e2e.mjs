@@ -5,6 +5,8 @@ import { servir, abrirChrome, comoMovil, dormir, RAIZ } from './cdp.mjs';
 import { join } from 'node:path';
 
 const carpeta = process.argv[2] ? join(RAIZ, process.argv[2]) : RAIZ;
+// Probando app/www se imita la app nativa (sin service worker, como dentro de Capacitor)
+const COMO_APP = process.argv[2] ? `window.Capacitor = { isNativePlatform: () => true, Plugins: {} };` : '';
 // Presupuestos (ms). Medidos con CPU ×4; si una mejora los baja mucho, bajarlos aquí también.
 const PRESUPUESTO = { arranque: 4000, tareaLarga: 600, bloqueoTotal: 4000, fotogramasLentos: 0.25 };
 
@@ -31,7 +33,7 @@ async function recorrer(idioma, completo) {
   pagina.on('Log.entryAdded', p => { if (p.entry.level === 'error' && !/favicon|tile|arcgisonline|open-meteo|jma\.go|Failed to load resource/.test(p.entry.text + (p.entry.url || ''))) errores.push('consola: ' + p.entry.text); });
   try {
     await comoMovil(pagina, { idioma });
-    await pagina.cdp('Page.addScriptToEvaluateOnNewDocument', { source: SONDA + `try { localStorage.setItem('yc_idioma', '${idioma}') } catch {}` });
+    await pagina.cdp('Page.addScriptToEvaluateOnNewDocument', { source: SONDA + COMO_APP + `try { localStorage.setItem('yc_idioma', '${idioma}') } catch {}` });
     const t0 = Date.now();
     await pagina.cdp('Page.navigate', { url });
     await pagina.esperar(`document.querySelectorAll('#lista .item').length > 0`, 20000);
