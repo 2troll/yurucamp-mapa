@@ -1,8 +1,8 @@
 // Service worker: la app funciona sin conexión y sin el Mac.
 // Cambia VERSION al publicar cambios para que el teléfono descargue lo nuevo.
-const VERSION = 'v15';
+const VERSION = 'v16';
 const NUCLEO = `nucleo-${VERSION}`, MEDIOS = 'medios-v1', TESELAS = 'teselas-v1';
-const ARCHIVOS = ['./', 'index.html', 'campings.js', 'vocabulario.js', 'voces.js', 'anime.js', 'lugares.js', 'audios.js', 'casting.js', 'extras.js', 'idiomas.js', 'manifest.json',
+const ARCHIVOS = ['./', 'index.html', 'campings.js', 'vocabulario.js', 'voces.js', 'anime.js', 'lugares.js', 'audios.js', 'casting.js', 'extras.js', 'sorpresas.js', 'idiomas.js', 'manifest.json', 'privacidad.html',
   'iconos/icono-192.png', 'iconos/icono-512.png',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css', 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'];
 const MAX_TESELAS = 2500;

@@ -21,7 +21,7 @@ const IDIOMA = (() => {
 document.documentElement.lang = IDIOMA;
 document.documentElement.dir = IDIOMAS[IDIOMA].rtl ? 'rtl' : 'ltr';
 // Script bloqueante a propósito: los textos tienen que estar antes de pintar nada
-if (IDIOMA !== 'es') document.write(`<script src="i18n/${IDIOMA}.js?v=1"><\/script>`);
+if (IDIOMA !== 'es') document.write(`<script src="i18n/${IDIOMA}.js?v=2"><\/script>`);
 
 // tr('texto en español', { n: 3 }) → el texto en el idioma elegido, con {n} sustituido
 function tr(es, vars) {

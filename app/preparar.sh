@@ -3,7 +3,7 @@
 set -e
 cd "$(dirname "$0")"
 rm -rf www && mkdir -p www/vendor vendor
-for f in index.html campings.js vocabulario.js voces.js anime.js lugares.js audios.js casting.js extras.js idiomas.js manifest.json; do cp "../$f" www/; done
+for f in index.html campings.js vocabulario.js voces.js anime.js lugares.js audios.js casting.js extras.js sorpresas.js idiomas.js manifest.json privacidad.html; do cp "../$f" www/; done
 # Solo los idiomas generados, no el traductor ni sus cachés
 mkdir -p www/i18n && cp ../i18n/??.js www/i18n/
 cp -R ../iconos ../voces ../lugares ../fotos-web www/

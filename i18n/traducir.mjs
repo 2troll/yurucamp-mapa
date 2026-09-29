@@ -17,7 +17,7 @@ const ui = new Set();
 const literales = trozo => [...trozo.matchAll(/'((?:[^'\\\n]|\\.)*)'/g)].map(m => m[1].replace(/\\'/g, "'"));
 const conLetras = s => /[A-Za-zÀ-ÿ]{2}/.test(s) && !/^https?:|^[#.]|\$\{/.test(s);
 const empiezaConEmoji = s => /^\P{L}/u.test(s) && !/^[\s\d]/.test(s);
-const html = leer('index.html'), extras = leer('extras.js');
+const html = leer('index.html'), extras = leer('extras.js') + '\n' + leer('sorpresas.js');
 const js = html.slice(html.indexOf('<script>\nif (typeof CAMPINGS')) + extras;
 
 // a) Todo literal dentro de tr( … ), también en ternarios; se salta el objeto de variables
@@ -41,6 +41,7 @@ for (const nombre of ['ESTILOS', 'EXTRAS', 'GRUPOS', 'PAISAJES', 'ESTACIONES', '
   }
 }
 for (const m of js.matchAll(/(?:titulo|desc): '([^']+)'/g)) if (conLetras(m[1])) ui.add(m[1]); // MODOS
+for (const m of js.matchAll(/(?:nombre|pista): '([^']+)'/g)) if (conLetras(m[1])) ui.add(m[1]); // logros secretos
 for (const m of extras.matchAll(/, '([a-záéíóúñ ]+)'\]/g)) ui.add(m[1]); // lunas y rumbos
 for (const m of leer('anime.js').matchAll(/return \['[^']*', '[^']*', '[^']*', '([^']+)'\]/g)) ui.add(m[1]); // tiempo
 // c) HTML fijo: textos, title, aria-label y placeholder

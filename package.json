@@ -1,0 +1,9 @@
+{
+  "name": "yurucamp-mapa",
+  "private": true,
+  "description": "Pruebas de la web y de la app (sin dependencias: Node 22+ y Google Chrome).",
+  "scripts": {
+    "test": "node tests/datos.mjs && node tests/e2e.mjs",
+    "test:app": "cd app && sh preparar.sh && cd .. && node tests/e2e.mjs app/www"
+  }
+}
