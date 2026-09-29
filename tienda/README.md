@@ -17,9 +17,9 @@ node tests/capturas.mjs   # regenera las 64 capturas de tienda/capturas/ (no van
 |---|---|
 | AAB firmado, targetSdk 36 | `cd app && JAVA_HOME=/opt/homebrew/opt/openjdk@21 npm run aab` → `app/android/app/build/outputs/bundle/release/app-release.aab` |
 | Clave de subida | `~/.claves/yurucamp/yurucamp.jks` (👤 cópiala al SSD: si la pierdes, no podrás actualizar la app) |
-| Icono 512×512 | `iconos/icono-512.png` (original, no usa imágenes del anime) |
+| Icono 512×512 | `tienda/icono-play-512.png` (el original, igual que el de la app) |
 | Gráfico destacado 1024×500 | `tienda/capturas/android/grafico-destacado-1024x500.png` |
-| Capturas de teléfono (2-8) | `tienda/capturas/android/{es,en,ja}/` 1080×2160 |
+| Capturas de teléfono (2-8) | `tienda/capturas/android/{es,en,ja}/` 1080×1920 |
 | Política de privacidad | https://2troll.github.io/yurucamp-mapa/privacidad.html |
 | Versión | versionCode 3 · 1.2 |
 
