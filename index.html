@@ -22,6 +22,7 @@
 <script src="extras.js?v=10" defer></script>
 <script src="sorpresas.js?v=1" defer></script>
 <script src="fotos.js?v=3" defer></script>
+<script src="vivir.js?v=1" defer></script>
 <script src="anime.js?v=8"></script>
 <script src="lugares.js?v=8"></script>
 <style>
@@ -654,6 +655,67 @@
     .rejilla-fotos { grid-template-columns: 1fr; }
     .retos { grid-template-columns: 1fr; }
   }
+
+  /* ---------- Vive el anime: episodios, revivir, peregrino, diario ---------- */
+  #hoja-personajes .pestañas { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; }
+  .rejilla-ep { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; margin-top: 6px; }
+  .tarj-ep { text-align: left; padding: 0; border-radius: 18px; overflow: hidden; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.07); color: #fff; cursor: pointer; font: inherit; }
+  .tarj-ep.completo { border-color: #30d158; }
+  .tarj-ep .mosaico { display: grid; grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr; height: 128px; gap: 2px; }
+  .tarj-ep .mosaico img { width: 100%; height: 100%; object-fit: cover; display: block; } .tarj-ep .mosaico img:first-child { grid-row: span 2; }
+  .tarj-ep .mosaico img:only-child { grid-column: span 2; }
+  .ep-pie { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 5px; } .ep-pie b { font-size: 16px; }
+  .ep-titulo { margin: 10px 0 8px; font-size: 24px; }
+  .carrusel { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; }
+  .carrusel figure { margin: 0; flex: 0 0 min(78%, 420px); scroll-snap-align: start; }
+  .carrusel img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 14px; display: block; cursor: zoom-in; }
+  .carrusel figcaption { font-size: 13px; margin-top: 4px; color: var(--suave); }
+  .ep-acciones { margin: 10px 0; } .ep-camping { margin-top: 10px; } .ep-camping p { margin: 6px 0; } .ep-h { margin: 16px 0 8px; }
+  .ep-lugares { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+  .ico-l { width: 86px; height: 50px; display: grid; place-items: center; font-size: 26px; flex: none; border-radius: 10px; background: rgba(255,255,255,.1); }
+  #chip-ep { position: fixed; z-index: 1450; left: 50%; transform: translateX(-50%); top: calc(var(--arriba, 16px) + 6px); padding: 9px 16px; border-radius: 99px;
+    border: 1px solid rgba(255,255,255,.3); color: #fff; font: inherit; font-weight: 700; cursor: pointer; background: rgba(20,24,34,.9); }
+  #chip-ep b { margin-left: 8px; opacity: .8; } #chip-ep[hidden] { display: none; }
+  #revivir { position: fixed; inset: 0; z-index: 3000; background: #000; color: #fff; overflow: hidden; }
+  #revivir[hidden] { display: none; }
+  .rv-fotos, .rv-img { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .rv-img { object-fit: contain; opacity: 0; transition: opacity .9s; will-change: transform, opacity; }
+  /* En vertical la captura entera, grande y centrada (recortarla a lo alto la dejaba borrosa) */
+  @media (orientation: portrait) { .rv-img { inset: 0; height: 100%; } }
+  .rv-img.ver { opacity: 1; }
+  .rv-img.kb1 { animation: kb1 4.6s linear forwards; } .rv-img.kb2 { animation: kb2 4.6s linear forwards; } .rv-img.kb3 { animation: kb3 4.6s linear forwards; }
+  @keyframes kb1 { from { transform: scale(1.04) } to { transform: scale(1.14) translate(-1.5%, -1%) } }
+  @keyframes kb2 { from { transform: scale(1.14) translate(1.5%, 0) } to { transform: scale(1.04) } }
+  @keyframes kb3 { from { transform: scale(1.06) translate(0, 1.5%) } to { transform: scale(1.14) translate(1%, -1%) } }
+  @media (prefers-reduced-motion: reduce) { .rv-img { animation: none !important; } }
+  .rv-barras { position: absolute; top: max(10px, env(safe-area-inset-top)); left: 12px; right: 12px; display: flex; gap: 3px; z-index: 2; }
+  .rv-barras i { flex: 1; height: 3px; border-radius: 3px; background: rgba(255,255,255,.3); overflow: hidden; }
+  .rv-barras i b { display: block; height: 100%; width: 0; background: #fff; }
+  .rv-barras i.lleno b { width: 100%; } .rv-barras i.ahora b { animation: barra 4.2s linear forwards; }
+  @keyframes barra { to { width: 100% } }
+  #revivir header { position: absolute; top: calc(max(10px, env(safe-area-inset-top)) + 10px); left: 12px; right: 12px; display: flex; gap: 8px; align-items: center; z-index: 3; }
+  .rv-titulo { flex: 1; text-shadow: 0 1px 6px #000; }
+  .rv-pie { position: absolute; left: 0; right: 0; bottom: 0; padding: 60px 20px max(28px, env(safe-area-inset-bottom)); z-index: 2;
+    background: linear-gradient(transparent, rgba(0,0,0,.8)); display: flex; flex-direction: column; gap: 4px; pointer-events: none; }
+  .rv-nombre { font-size: 26px; } .rv-nota { color: rgba(255,255,255,.8); }
+  .rv-zona { position: absolute; top: 70px; bottom: 0; width: 40%; background: none; border: 0; z-index: 1; cursor: pointer; } .rv-zona.izq { left: 0; } .rv-zona.dch { right: 0; width: 60%; }
+  .rv-fin { position: absolute; inset: 0; z-index: 4; background: rgba(0,0,0,.75); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; text-align: center; }
+  .rv-fin[hidden] { display: none; } .rv-fin .acciones { width: min(420px, 100%); }
+  #peregrino { position: fixed; z-index: 1460; left: 50%; transform: translateX(-50%); bottom: 112px; width: min(460px, calc(100vw - 24px));
+    display: flex; gap: 10px; align-items: center; padding: 8px; border-radius: 18px; background: rgba(20,24,34,.92); border: 1px solid rgba(255,255,255,.25); color: #fff; }
+  #peregrino[hidden] { display: none; } #peregrino.aqui { border-color: #30d158; box-shadow: 0 0 0 3px rgba(48,209,88,.35); }
+  #peregrino img, #peregrino .ico-l { width: 64px; height: 40px; object-fit: cover; border-radius: 8px; flex: none; }
+  #peregrino > div:nth-child(2) { flex: 1; min-width: 0; display: flex; flex-direction: column; } #peregrino b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #peregrino small { font-size: 11.5px; } .pg-acc { display: flex; gap: 4px; } .pg-acc .chip { padding: 6px 9px; }
+  #peregrino-btn.activo { background: #30d158; }
+  body:has(.hoja.abierta) #peregrino, body:has(.hoja.abierta) #chip-ep, body.ficha-abierta #peregrino, body.con-camara #peregrino, body.con-revivir #dock { visibility: hidden; }
+  .diario-cifras { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+  .diario-cifras div { background: rgba(255,255,255,.08); border-radius: 14px; padding: 10px; text-align: center; display: flex; flex-direction: column; }
+  .diario-cifras b { font-size: 26px; } .diario-cifras small { font-size: 11.5px; color: var(--suave); }
+  .diario-lista { display: flex; flex-direction: column; gap: 6px; } .diario-dia { margin: 10px 0 2px; color: var(--suave); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+  body.con-globo #peregrino, body.con-capas #peregrino { visibility: hidden; }
+  @media (max-width: 820px) { #peregrino { bottom: calc(var(--dock-h) + 140px); } #panel.medio ~ #peregrino, #panel.lleno ~ #peregrino { visibility: hidden; }
+    .diario-cifras { grid-template-columns: repeat(2, 1fr); } .rejilla-ep, .ep-lugares { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -722,8 +784,9 @@
 </section>
 
 <section class="hoja cristal" id="hoja-personajes">
-  <header><div><h1>👥 Personajes y voces</h1><p class="sub">Toca a una para oírla · cada tema de palabras lo dice una chica distinta</p></div></header>
-  <div class="contenido fino" id="personajes"></div>
+  <header><div><h1>📺 Vive el anime</h1><p class="sub" id="anime-sub"></p>
+      <div class="segmentos" id="seg-anime"><button data-s="episodios" class="activo">📺 Episodios</button><button data-s="diario">📔 Mi viaje</button><button data-s="personajes">👥 Voces</button></div></div></header>
+  <div class="contenido fino"><div id="episodios"></div><div id="diario" hidden></div><div id="personajes" hidden></div></div>
 </section>
 
 <section class="hoja cristal" id="hoja-fotos">
@@ -740,7 +803,7 @@
   <button data-vista="quiz"><span>🎯</span>Quiz</button>
   <button data-vista="fotos"><span>📸</span>Fotos</button>
   <button data-vista="mochila"><span>🧭</span>Viaje</button>
-  <button data-vista="personajes"><span>👥</span>Voces</button>
+  <button data-vista="personajes"><span>📺</span>Anime</button>
   <button data-vista="pasaporte"><span>🏅</span>Sellos</button>
 </nav>
 
@@ -1064,7 +1127,7 @@ function globoLugar(i) {
   const img = div.querySelector('img'); if (img) img.onclick = () => verGrande(img.src);
   div.querySelector('[data-visto]').onclick = e => {
     lugaresVistos.has(i) ? lugaresVistos.delete(i) : (lugaresVistos.add(i), confeti([cat.emoji, '💮', '✨']), Voz.reaccionar(voz, 'bien'));
-    guardado.escribir('lugaresVistos', [...lugaresVistos]);
+    guardado.escribir('lugaresVistos', [...lugaresVistos]); window.Vivir?.fecha('l', i, lugaresVistos.has(i));
     marcasLugar[i].options.visto = lugaresVistos.has(i); marcasLugar[i].redraw();
     e.currentTarget.classList.toggle('hecho', lugaresVistos.has(i)); e.currentTarget.textContent = tr(lugaresVistos.has(i) ? '💮 Estuve' : '📍 Estuve aquí');
   };
@@ -1087,11 +1150,12 @@ const ZOOM_LUGARES = 9; // de lejos los lugares se amontonan: se muestran al ace
 // Solo toca el mapa al cruzar el umbral o cambiar capas: antes añadía/quitaba 451 marcadores en cada zoom
 let estadoCapas = '';
 function ponerCapasLugar(forzar) {
-  const cerca = mapa.getZoom() >= ZOOM_LUGARES, clave = cerca + [...capasLugar].sort().join();
+  // Con un episodio elegido («Verlo en el mapa») se ven solo sus sitios, a cualquier zoom
+  const ep = window.epFiltro, cerca = mapa.getZoom() >= ZOOM_LUGARES, clave = ep + cerca + [...capasLugar].sort().join();
   if (!forzar && clave === estadoCapas) return;
   estadoCapas = clave;
   // El lugar abierto se queda aunque te alejes, para no perder dónde estaba
-  marcasLugar.forEach((m, i) => (cerca && capasLugar.has(LUGARES[i].c)) || i === lugarSel ? (mapa.hasLayer(m) || m.addTo(mapa)) : (mapa.hasLayer(m) && mapa.removeLayer(m)));
+  marcasLugar.forEach((m, i) => (ep ? LUGARES[i].ep === ep : cerca && capasLugar.has(LUGARES[i].c)) || i === lugarSel ? (mapa.hasLayer(m) || m.addTo(mapa)) : (mapa.hasLayer(m) && mapa.removeLayer(m)));
   campingsArriba();
 }
 // En pantallas táctiles la etiqueta se quedaba pegada encima de la tarjeta y repetía el título
@@ -1287,7 +1351,7 @@ function marcarSeleccion() { document.querySelectorAll('#lista .item').forEach(e
 function alternarVisita(i) {
   const rangoAntes = rangoActual();
   visitados.has(i) ? visitados.delete(i) : visitados.add(i);
-  guardado.escribir('visitados', [...visitados]);
+  guardado.escribir('visitados', [...visitados]); window.Vivir?.fecha('c', i, visitados.has(i));
   refrescarIcono(i);
   if (visitados.has(i)) {
     confeti(['💮', '🏕️', '⛺', '🔥']);
@@ -1885,7 +1949,7 @@ function irA(vista) {
   if (vista === 'quiz' && !partida) pintarMenuQuiz();
   if (vista === 'mochila') pintarMochila();
   if (vista === 'pasaporte') pintarPasaporte();
-  if (vista === 'personajes') pintarPersonajes();
+  if (vista === 'personajes') window.Vivir ? Vivir.pintar() : pintarPersonajes();
   if (vista === 'fotos') window.Fotos?.pintar();
 }
 document.querySelectorAll('#dock button').forEach(b => b.onclick = () => irA(b.dataset.vista));
@@ -1912,6 +1976,7 @@ addEventListener('beforeinstallprompt', e => {
 // Botón «atrás» de Android: cierra lo que esté abierto antes de salir de la app
 window.Capacitor?.Plugins?.App?.addListener('backButton', () => {
   if (window.cerrarCamara?.()) return;
+  if (window.cerrarRevivir?.()) return;
   if (window.cerrarExtras?.()) return;
   if (visor.classList.contains('abierto')) return visor.classList.remove('abierto');
   if ($('#capas').classList.contains('abierto')) return abrirCapas(false);

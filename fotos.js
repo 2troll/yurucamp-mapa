@@ -352,5 +352,5 @@
   // Botón «atrás» de Android y Escape
   window.cerrarCamara = () => { if (capa.hidden) return false; cerrar(); return true; };
   addEventListener('keydown', e => { if (e.key === 'Escape') window.cerrarCamara(); });
-  window.Fotos = { abrir, pintar, hechas, escenasDe: lugar => ESCENAS.filter(e => e.lugar === lugar).map(e => e.escena) };
+  window.Fotos = { abrir, pintar, hechas, album, escenasDe: lugar => ESCENAS.filter(e => e.lugar === lugar).map(e => e.escena) };
 })();
