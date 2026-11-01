@@ -21,7 +21,7 @@
 <script src="casting.js?v=10" defer></script>
 <script src="extras.js?v=10" defer></script>
 <script src="sorpresas.js?v=1" defer></script>
-<script src="fotos.js?v=2" defer></script>
+<script src="fotos.js?v=3" defer></script>
 <script src="anime.js?v=8"></script>
 <script src="lugares.js?v=8"></script>
 <style>
@@ -570,6 +570,10 @@
      Cada panel animado va en su propia capa (no se repinta al moverse) y las listas largas
      solo dibujan lo que está en pantalla. */
   #ficha, .hoja, #capas, #panel, #dock, #herramientas, #bocadillo, #aviso { will-change: transform; contain: layout paint style; }
+  /* Cerradas no se pintan ni ocupan memoria de GPU (eran 7 capas a pantalla completa siempre vivas);
+     la visibilidad cambia al acabar la animación de cierre y al instante al abrir */
+  .hoja:not(.abierta), #ficha:not(.abierta), #tarjeta-lugar:not(.abierta) { will-change: auto; visibility: hidden; transition-property: opacity, transform, visibility; transition-delay: 0s, 0s, .45s; }
+  .hoja.abierta, #ficha.abierta, #tarjeta-lugar.abierta { visibility: visible; }
   .tarjeta, .item, .sello, .escena, .pj, .check, .parada, .bloque { content-visibility: auto; contain-intrinsic-size: auto 120px; }
   .rejilla .tarjeta { contain-intrinsic-size: auto 130px; }
   #lista, .contenido { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
@@ -836,7 +840,9 @@ function ruby(ja, kana) {
 /* ================= Mapa ================= */
 let seleccionado = null;
 const tactil = matchMedia('(pointer: coarse)').matches;
-const mapa = L.map('mapa', { zoomControl: false, attributionControl: false, preferCanvas: true, updateWhenZooming: false, zoomSnap: .25, zoomDelta: .5, bounceAtZoomLimits: false, wheelPxPerZoomLevel: 90, fadeAnimation: !tactil }).setView([35.4, 138.4], 8);
+// Más teselas guardadas alrededor: al arrastrar no asoman huecos en blanco
+L.TileLayer.mergeOptions({ keepBuffer: tactil ? 4 : 3 });
+const mapa = L.map('mapa', { inertiaDeceleration: 2200, easeLinearity: .18,  zoomControl: false, attributionControl: false, preferCanvas: true, updateWhenZooming: false, zoomSnap: .25, zoomDelta: .5, bounceAtZoomLimits: false, wheelPxPerZoomLevel: 90, fadeAnimation: !tactil }).setView([35.4, 138.4], 8);
 const pie = 'Capturas: ©あfろ・芳文社／野外活動委員会';
 const satelite = L.layerGroup([
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imágenes © Esri · ' + pie }),
@@ -958,19 +964,29 @@ $('#estacion').onclick = () => { conParticulas = !conParticulas; guardado.escrib
 const renderLugares = L.canvas({ padding: .3, tolerance: tactil ? 6 : 2 }), renderCampings = renderLugares;
 const campingsArriba = () => marcadores.forEach(m => mapa.hasLayer(m) && m.bringToFront());
 const PinLugar = L.CircleMarker.extend({
+  // Cada pin se pinta UNA vez en un lienzo pequeño y luego solo se copia: rasterizar emojis en cada
+  // redibujado (cada arrastre o zoom, ~100 pines) es lo más caro del mapa en Android
   _updatePath() {
     if (this._empty()) return;
-    const ctx = this._renderer._ctx, p = this._point, r = this._radius, o = this.options;
-    ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-    ctx.fillStyle = o.fillColor; ctx.fill();
-    ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
-    ctx.font = `${Math.round(r * 1.05)}px system-ui, "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#000';
-    ctx.fillText(o.emoji, p.x, p.y + 1);
-    if (o.sel) { ctx.lineWidth = 3; ctx.strokeStyle = '#ffd60a'; ctx.beginPath(); ctx.arc(p.x, p.y, r + 3, 0, Math.PI * 2); ctx.stroke(); ctx.fillStyle = '#000'; }
-    if (o.visto) { ctx.font = `${Math.round(r * .8)}px system-ui, "Noto Color Emoji", sans-serif`; ctx.fillText('💮', p.x + r * .8, p.y - r * .8); }
+    const o = this.options, r = this._radius, img = spritePin(o.emoji, o.fillColor, r, !!o.sel, !!o.visto);
+    this._renderer._ctx.drawImage(img, this._point.x - img.lado / 2, this._point.y - img.lado / 2, img.lado, img.lado);
   },
 });
+const SPRITES = new Map();
+function spritePin(emoji, color, r, sel, visto) {
+  const clave = [emoji, color, r, sel, visto].join('|');
+  let c = SPRITES.get(clave); if (c) return c;
+  const dpr = Math.min(3, devicePixelRatio || 1), lado = Math.ceil((r + 8) * 2);
+  c = document.createElement('canvas'); c.width = c.height = Math.ceil(lado * dpr); c.lado = lado;
+  const ctx = c.getContext('2d'); ctx.scale(dpr, dpr); const m = lado / 2;
+  ctx.beginPath(); ctx.arc(m, m, r, 0, Math.PI * 2);
+  ctx.fillStyle = color; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
+  ctx.font = `${Math.round(r * 1.05)}px system-ui, "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#000'; ctx.fillText(emoji, m, m + 1);
+  if (sel) { ctx.lineWidth = 3; ctx.strokeStyle = '#ffd60a'; ctx.beginPath(); ctx.arc(m, m, r + 3, 0, Math.PI * 2); ctx.stroke(); }
+  if (visto) { ctx.font = `${Math.round(r * .8)}px system-ui, "Noto Color Emoji", sans-serif`; ctx.fillText('💮', m + r * .8, m - r * .8); }
+  SPRITES.set(clave, c); return c;
+}
 const COLOR_TEMPORADA = { T1: '#ff9f0a', T2: '#bf5af2', T3: '#0a84ff', 'Película': '#30d158' };
 const marcadores = CAMPINGS.map((c, i) => new PinLugar([c.lat, c.lng], { renderer: renderCampings, radius: 19, fillColor: COLOR_TEMPORADA[c.temporada],
     emoji: '⛺', visto: visitados.has(i), bubblingMouseEvents: false })
