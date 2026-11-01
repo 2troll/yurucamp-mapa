@@ -148,7 +148,7 @@
   "↺ Voz original": "↺ 元のボイス",
   "Las frases son originales de esta web, escritas al estilo de cada personaje. No se usan audios del anime: las voces reales son de sus actrices y no se pueden publicar.": "フレーズはこのアプリ独自のものです（各キャラの口調を再現）。アニメ本編の音声は使用していません。",
   "Tus clips se quedan solo en este navegador.": "録音・追加した音声はこのブラウザ内にのみ保存されます。",
-  "Voces": "ボイス一覧",
+  "Voces": "ボイス",
   "voz del sistema": "システム音声",
   "Primero escucha alguna letra y luego pulsa ⭐": "まず音声を聴いてから⭐を押してください",
   "¡Encantada! Ahora leo yo las palabras.": "よろしくね！これからは私が単語を読み上げるよ。",
@@ -424,7 +424,11 @@
   "🌍 Muro": "🌍 みんなの投稿",
   "📒 Mi álbum": "📒 マイアルバム",
   "🎯 Retos": "🎯 チャレンジ",
-  "Fotos": "写真"
+  "Fotos": "写真",
+  "Espera un minuto antes de publicar otra foto": "次の写真を投稿するまで、1分ほど待ってね！",
+  "Has llegado al máximo de fotos por hoy. ¡Mañana más!": "今日の写真の上限に達しました。また明日ね！",
+  "El muro no ha aceptado la foto. Inténtalo más tarde.": "写真の投稿に失敗しました。後でもう一度試してね。",
+  "Campista": "キャンパー"
  },
  "datos": {
   "Kōan": "浩庵キャンプ場",

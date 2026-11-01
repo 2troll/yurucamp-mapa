@@ -1,6 +1,6 @@
 // Service worker: la app funciona sin conexión y sin el Mac.
 // Cambia VERSION al publicar cambios para que el teléfono descargue lo nuevo.
-const VERSION = 'v17';
+const VERSION = 'v18';
 const NUCLEO = `nucleo-${VERSION}`, MEDIOS = 'medios-v1', TESELAS = 'teselas-v1';
 const ARCHIVOS = ['./', 'index.html', 'campings.js', 'vocabulario.js', 'voces.js', 'anime.js', 'lugares.js', 'audios.js', 'casting.js', 'extras.js', 'sorpresas.js', 'fotos.js', 'idiomas.js', 'manifest.json', 'privacidad.html',
   'iconos/icono-192.png', 'iconos/icono-512.png',

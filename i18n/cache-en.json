@@ -424,7 +424,11 @@
   "🌍 Muro": "🌍 Feed",
   "📒 Mi álbum": "📒 My album",
   "🎯 Retos": "🎯 Challenges",
-  "Fotos": "Photos"
+  "Fotos": "Photos",
+  "Espera un minuto antes de publicar otra foto": "Wait a minute before posting another photo",
+  "Has llegado al máximo de fotos por hoy. ¡Mañana más!": "You've reached your photo limit for today. More tomorrow!",
+  "El muro no ha aceptado la foto. Inténtalo más tarde.": "The wall didn't accept the photo. Try again later.",
+  "Campista": "Camper"
  },
  "datos": {
   "Kōan": "Kōan",

@@ -6,3 +6,9 @@ compatibility_date = "2026-10-01"
 [[kv_namespaces]]
 binding = "MURO"
 id = "PENDIENTE"
+
+# Frena ráfagas (KV no es atómico: sin esto, 12 envíos simultáneos pasaban todos). Gratis.
+[[ratelimits]]
+name = "RAFAGA"
+namespace_id = "1001"
+simple = { limit = 2, period = 60 }

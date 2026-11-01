@@ -2,7 +2,7 @@
 // El muro (muro/worker.js) solo guarda la foto real; la escena del anime la pone la app desde sus propios archivos.
 (() => {
   const MURO = (() => { try { return localStorage.getItem('yc_muro') || ''; } catch { return ''; } })() || 'https://yurucamp-muro.2troll-p.workers.dev';
-  const CREDITO = 'Escena: ©あfろ・芳文社／野外活動委員会';
+  const CREDITO = '©あfろ・芳文社／野外活動委員会';
   const $f = s => document.querySelector(s);
 
   /* ---------- Catálogo de escenas: cada captura del anime que se puede recrear ---------- */
@@ -52,8 +52,9 @@
     const etiqueta = (txt, y) => { g.font = '700 30px system-ui, sans-serif'; const w = g.measureText(txt).width + 32;
       g.fillStyle = 'rgba(0,0,0,.55)'; g.beginPath(); g.roundRect(20, y, w, 48, 24); g.fill(); g.fillStyle = '#fff'; g.fillText(txt, 36, y + 34); };
     etiqueta('🎬 ' + tr('Anime'), 20); etiqueta('📷 ' + tr('Real'), ha + 26);
-    g.fillStyle = '#fff'; g.font = '800 34px system-ui, "Hiragino Sans", sans-serif'; g.fillText('⛺ ' + titulo.slice(0, 48), 28, ha + hr + 52);
-    g.fillStyle = 'rgba(255,255,255,.7)'; g.font = '500 22px system-ui, sans-serif'; g.fillText('ゆるキャン△ 聖地巡礼 · ' + CREDITO, 28, ha + hr + 86);
+    const rtl = document.documentElement.dir === 'rtl'; g.direction = rtl ? 'rtl' : 'ltr'; const x = rtl ? W - 28 : 28;
+    g.fillStyle = '#fff'; g.font = '800 34px system-ui, "Hiragino Sans", sans-serif'; g.fillText('⛺ ' + titulo.slice(0, 48), x, ha + hr + 52);
+    g.direction = 'ltr'; g.fillStyle = 'rgba(255,255,255,.7)'; g.font = '500 22px system-ui, sans-serif'; g.fillText('ゆるキャン△ 聖地巡礼 · ' + CREDITO, 28, ha + hr + 86);
     URL.revokeObjectURL(r.src);
     return aBlob(c, .88);
   }
@@ -77,7 +78,7 @@
     d.innerHTML = `<img class="real" alt="${esc(tr('Foto real'))}" decoding="async" loading="lazy">
       <img class="anime" alt="${esc(tr('Escena del anime'))}" decoding="async" loading="lazy">
       <i class="raya"></i><span class="etq-c izq">🎬</span><span class="etq-c dch">📷</span>
-      <input type="range" min="0" max="100" value="50" aria-label="${esc(tr('Comparar anime y foto real'))}">`;
+      <input type="range" dir="ltr" min="0" max="100" value="50" aria-label="${esc(tr('Comparar anime y foto real'))}">`;
     d.querySelector('.real').src = realSrc; d.querySelector('.anime').src = animeSrc;
     const r = d.querySelector('input'); r.oninput = () => d.style.setProperty('--x', r.value + '%');
     return d;
@@ -93,7 +94,7 @@
     <div class="cam-visor"><div class="cam-marco"><video playsinline muted autoplay></video><img class="cam-fantasma" alt=""><img class="cam-mini" alt=""></div>
       <p class="cam-girar">📱↔ ${esc(tr('Gira el móvil para encuadrar mejor'))}</p><p class="cam-error" hidden></p></div>
     <div class="cam-escenas fino"></div>
-    <footer><label class="cam-op">🎬<input type="range" min="0" max="90" value="45" aria-label="${esc(tr('Transparencia de la escena'))}">📷</label>
+    <footer><label class="cam-op" dir="ltr">📷<input type="range" dir="ltr" min="0" max="90" value="45" aria-label="${esc(tr('Transparencia de la escena'))}">🎬</label>
       <div class="cam-botones"><label class="redondo" aria-label="${esc(tr('Elegir de la galería'))}">🖼️<input type="file" accept="image/*" hidden></label>
         <button class="disparador" data-c="disparar" aria-label="${esc(tr('Hacer la foto'))}"></button>
         <button class="redondo" data-c="girar" aria-label="${esc(tr('Cambiar de cámara'))}">🔄</button></div></footer>
@@ -149,8 +150,10 @@
   }
   capa.querySelector('[data-c="cerrar"]').onclick = cerrar;
   capa.querySelector('[data-c="girar"]').onclick = () => { camaraTrasera = !camaraTrasera; encenderCamara(); };
+  let disparando = false;
   capa.querySelector('[data-c="disparar"]').onclick = async () => {
     if (!video.videoWidth) return avisar(tr('La cámara aún no está lista'));
+    if (disparando) return; disparando = true; setTimeout(() => { disparando = false; }, 1200);
     const aspecto = fantasma.naturalWidth / fantasma.naturalHeight || 16 / 9;
     capa.querySelector('.disparador').classList.add('flash'); setTimeout(() => capa.querySelector('.disparador').classList.remove('flash'), 300);
     window.Capacitor?.Plugins?.Haptics?.impact?.({ style: 'MEDIUM' });
@@ -182,7 +185,7 @@
       <button class="boton" data-r="compartir">${esc(tr('📤 Compartir'))}</button><button class="boton" data-r="otra">${esc(tr('🔁 Repetir'))}</button>
       <button class="boton grande" data-r="listo">${esc(tr('✓ Listo'))}</button>`;
     caja.appendChild(acc); r.appendChild(caja);
-    acc.querySelector('[data-r="publicar"]').onclick = () => formularioPublicar(foto, caja);
+    acc.querySelector('[data-r="publicar"]').onclick = e => { if (foto.publicado) return avisar(tr('✓ En el muro')); formularioPublicar(foto, caja, e.currentTarget); };
     acc.querySelector('[data-r="compartir"]').onclick = () => compartirFoto(foto);
     acc.querySelector('[data-r="otra"]').onclick = () => { r.hidden = true; encenderCamara(); };
     acc.querySelector('[data-r="listo"]').onclick = cerrar;
@@ -193,7 +196,7 @@
   }
 
   /* ---------- Publicar en el muro ---------- */
-  function formularioPublicar(foto, dentro) {
+  function formularioPublicar(foto, dentro, boton) {
     dentro.querySelector('.publicar')?.remove();
     const f = document.createElement('form'); f.className = 'publicar bloque';
     const aceptadas = guardado.leer('normasMuro', false);
@@ -212,29 +215,34 @@
         fd.append('nombre', nombre); fd.append('texto', f.texto.value.trim()); fd.append('verificado', foto.verificado ? '1' : '0');
         const r = await fetch(MURO + '/posts', { method: 'POST', body: fd, signal: AbortSignal.timeout(30000) });
         const j = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status);
+        if (!r.ok) throw new Error(j.codigo === 'rafaga' ? tr('Espera un minuto antes de publicar otra foto') : j.codigo === 'cupo' ? tr('Has llegado al máximo de fotos por hoy. ¡Mañana más!') : tr('El muro no ha aceptado la foto. Inténtalo más tarde.'));
         foto.publicado = j.post.id; await album.poner(foto).catch(() => {});
         f.innerHTML = `<p>✅ ${esc(tr('¡Publicada! Ya la puede ver todo el mundo en Fotos → Muro.'))}</p>`;
-        confeti(['🌍', '📸', '🏕️']); muroCache = null;
+        if (boton) { boton.disabled = true; boton.textContent = tr('✓ En el muro'); }
+        confeti(['🌍', '📸', '🏕️']);
+        // El muro se sirve con un minuto de caché: tu foto se ve al momento aunque la lista aún no la traiga
+        misPosts.unshift(j.post); guardado.escribir('misPosts', misPosts.slice(0, 30)); muroCache = null;
       } catch (e) {
         console.error('[fotos] publicar:', e);
         b.disabled = false; b.textContent = tr('Reintentar');
-        avisar(/Failed to fetch|timeout|NetworkError/i.test(e.message) ? tr('Sin conexión: se queda en tu álbum, publícala luego') : e.message);
+        avisar(/Failed to fetch|time|NetworkError|abort/i.test(e.name + e.message) ? tr('Sin conexión: se queda en tu álbum, publícala luego') : e.message);
       }
     };
     dentro.appendChild(f); f.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   /* ---------- Hoja «Fotos»: muro, álbum y retos ---------- */
-  let seccion = 'muro', muroCache = null, muroCursor = null;
+  let seccion = 'muro', muroCache = null, muroCursor = null, turno = 0, urlsAlbum = [];
+  const misPosts = guardado.leer('misPosts', []);
   const ocultos = new Set(guardado.leer('muroOcultos', []));
   const fecha = ts => new Date(ts).toLocaleDateString(document.documentElement.lang || 'es', { day: 'numeric', month: 'short', year: 'numeric' });
 
   function tarjeta(p, realSrc, extra) {
     const e = porEscena.get(p.escena), t = document.createElement('article'); t.className = 'foto-tarj';
+    p = { ...p, lugar: e ? nombreDe(e) : p.lugar };
     t.appendChild(comparador(p.escena, realSrc));
     const pie = document.createElement('div'); pie.className = 'foto-pie';
-    pie.innerHTML = `<div class="foto-quien"><b>${esc(p.nombre || tr('Tú'))}</b> ${p.verificado ? `<span class="etq">${esc(tr('📍 in situ'))}</span>` : ''}<small class="sub">${fecha(p.ts)}</small></div>
+    pie.innerHTML = `<div class="foto-quien"><b>${esc(p.nombre || tr('Campista'))}</b> ${p.verificado ? `<span class="etq">${esc(tr('📍 in situ'))}</span>` : ''}<small class="sub">${fecha(p.ts)}</small></div>
       <div class="jp foto-lugar">⛺ ${esc(p.lugar)}${e?.ep ? ` · <span class="sub">${esc(e.ep)}</span>` : ''}</div>
       ${p.texto ? `<p>${esc(p.texto)}</p>` : ''}<div class="foto-acc"></div>`;
     const acc = pie.querySelector('.foto-acc');
@@ -250,6 +258,7 @@
   }
 
   async function pintarMuro(caja, mas) {
+    const yo = ++turno;
     if (!mas) { caja.innerHTML = `<p class="sub">${esc(tr('Cargando el muro…'))}</p>`; }
     try {
       if (!muroCache || mas) {
@@ -260,10 +269,17 @@
       }
     } catch (e) {
       console.warn('[fotos] muro:', e);
-      caja.innerHTML = `<p class="sub">${esc(tr('No se puede cargar el muro ahora (¿sin conexión?). Tus fotos siguen en «Mi álbum».'))}</p>`; return;
+      if (yo !== turno) return;
+      caja.innerHTML = `<p class="sub">${esc(tr('No se puede cargar el muro ahora (¿sin conexión?). Tus fotos siguen en «Mi álbum».'))}</p>`;
+      const b = document.createElement('button'); b.className = 'boton grande'; b.textContent = tr('Reintentar'); b.onclick = () => pintarMuro(caja); caja.appendChild(b);
+      return;
     }
+    if (yo !== turno) return;
     caja.innerHTML = '';
-    const posts = muroCache.filter(p => !ocultos.has(p.id) && !ocultos.has('n:' + p.nombre));
+    // Solo escenas que existen en la app; las tuyas recién publicadas, aunque la caché del muro aún no las traiga
+    const vistos = new Set(muroCache.map(p => p.id));
+    const posts = [...misPosts.filter(p => !vistos.has(p.id)), ...muroCache]
+      .filter(p => porEscena.has(p.escena) && !ocultos.has(p.id) && !(p.autor && ocultos.has('a:' + p.autor)));
     if (!posts.length) caja.innerHTML = `<div class="vacio">📸<p>${esc(tr('Aún no hay fotos. ¡Sé la primera persona en recrear una escena!'))}</p></div>`;
     const rej = document.createElement('div'); rej.className = 'rejilla-fotos'; caja.appendChild(rej);
     posts.forEach(p => rej.appendChild(tarjeta(p, `${MURO}/img/${p.id}`, acc => {
@@ -274,20 +290,23 @@
         fetch(`${MURO}/denunciar/${p.id}`, { method: 'POST' }).catch(() => {});
       };
       const o = document.createElement('button'); o.className = 'chip'; o.textContent = tr('🙈 Ocultar a esta persona');
-      o.onclick = () => { ocultos.add('n:' + p.nombre); guardado.escribir('muroOcultos', [...ocultos]); pintarMuro(caja); };
-      acc.append(d, o);
+      o.onclick = () => { ocultos.add('a:' + p.autor); guardado.escribir('muroOcultos', [...ocultos]); pintarMuro(caja); };
+      if (misPosts.some(m => m.id === p.id)) acc.append(d); else acc.append(d, ...(p.autor ? [o] : []));
     })));
     if (muroCursor) { const b = document.createElement('button'); b.className = 'boton grande'; b.textContent = tr('Ver más fotos'); b.onclick = () => pintarMuro(caja, true); caja.appendChild(b); }
   }
 
   async function pintarAlbum(caja) {
+    const yo = ++turno;
     let fotos = [];
     try { fotos = await album.todas(); } catch (e) { console.error(e); }
+    if (yo !== turno) return;
+    urlsAlbum.forEach(u => URL.revokeObjectURL(u)); urlsAlbum = [];
     caja.innerHTML = '';
     if (!fotos.length) { caja.innerHTML = `<div class="vacio">📒<p>${esc(tr('Tu álbum está vacío. Abre un sitio del mapa y pulsa «📸 Recrear escena».'))}</p></div>`; return; }
     const rej = document.createElement('div'); rej.className = 'rejilla-fotos'; caja.appendChild(rej);
     fotos.forEach(f => {
-      const url = URL.createObjectURL(f.real);
+      const url = URL.createObjectURL(f.real); urlsAlbum.push(url);
       const t = tarjeta({ ...f, nombre: tr('Tú') }, url, acc => {
         const c = document.createElement('button'); c.className = 'chip'; c.textContent = tr('📤 Compartir'); c.onclick = () => compartirFoto(f);
         const p = document.createElement('button'); p.className = 'chip'; p.textContent = f.publicado ? tr('✓ En el muro') : tr('🌍 Publicar');
@@ -301,6 +320,7 @@
   }
 
   function pintarRetos(caja) {
+    turno++;
     // Las más cercanas primero si sabemos dónde estás; si no, los campings primero
     const yo = typeof miPosicion !== 'undefined' && miPosicion;
     const lista = [...ESCENAS].sort((a, b) => yo ? km(yo, [a.lat, a.lng]) - km(yo, [b.lat, b.lng]) : (a.camping === undefined) - (b.camping === undefined));

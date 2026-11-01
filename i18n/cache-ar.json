@@ -415,7 +415,7 @@
   "✓ En el muro": "✓ على الحائط",
   "🌍 Publicar": "🌍 نشر",
   "🗑️ Borrar": "🗑️ حذف",
-  "¿Seguro? Toca otra vez": "هل أنت تأكد؟ اضغط مرة أخرى",
+  "¿Seguro? Toca otra vez": "هل أنت متأكد؟ اضغط مرة أخرى",
   "{n} de {t} escenas recreadas": "{n} من أصل {t} مشاهد مُعاد إنشاؤها",
   "ordenadas por cercanía": "مرتبة حسب القرب",
   "Ver más": "عرض المزيد",
@@ -424,7 +424,11 @@
   "🌍 Muro": "🌍 الحائط",
   "📒 Mi álbum": "📒 ألبومي",
   "🎯 Retos": "🎯 التحديات",
-  "Fotos": "الصور"
+  "Fotos": "الصور",
+  "Espera un minuto antes de publicar otra foto": "انتظر دقيقة قبل نشر صورة أخرى",
+  "Has llegado al máximo de fotos por hoy. ¡Mañana más!": "لقد وصلت إلى الحد الأقصى من الصور اليوم. المزيد غداً!",
+  "El muro no ha aceptado la foto. Inténtalo más tarde.": "لم يقبل الحائط الصورة. حاول مرة أخرى لاحقاً.",
+  "Campista": "مخيّم"
  },
  "datos": {
   "Kōan": "كōان",

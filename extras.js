@@ -276,7 +276,7 @@ MODOS.repaso = { emoji: '🧠', titulo: tr('Repaso del día'), get desc() {
   return `${vencidas.length ? tr('{n} por repasar hoy', { n: vencidas.length }) : tr('Nada vencido: palabras nuevas')} · ${tr('{n}/{total} dominadas', { n: dominadas, total: TODAS_PALABRAS.length })}`;
 }, pregunta() {
   const { vencidas, nuevas } = pendientes();
-  const bien = baraja(vencidas)[0] || nuevas[0] || baraja(TODAS_PALABRAS)[0];
+  const bien = baraja(vencidas)[0] || baraja(nuevas.slice(0, 12))[0] || baraja(TODAS_PALABRAS)[0];
   const ops = baraja([bien, ...baraja(TODAS_PALABRAS.filter(p => p.es !== bien.es)).slice(0, 3)]);
   const q = vozPalabra(bien.cat), caja = repaso[bien.w]?.caja || 0;
   return { quien: q, decir: bien.w, explica: `${bien.w} · ${bien.kana} · ${bien.romaji} — ${bien.es}`,

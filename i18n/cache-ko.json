@@ -424,7 +424,11 @@
   "🌍 Muro": "🌍 피드",
   "📒 Mi álbum": "📒 내 앨범",
   "🎯 Retos": "🎯 챌린지",
-  "Fotos": "사진"
+  "Fotos": "사진",
+  "Espera un minuto antes de publicar otra foto": "다른 사진을 올리기 전에 1분만 기다려 주세요",
+  "Has llegado al máximo de fotos por hoy. ¡Mañana más!": "오늘 올릴 수 있는 사진 한도에 도달했어요. 내일 또 올려요!",
+  "El muro no ha aceptado la foto. Inténtalo más tarde.": "게시판에 사진을 등록하지 못했어요. 나중에 다시 시도해 주세요.",
+  "Campista": "캠퍼"
  },
  "datos": {
   "Kōan": "Kōan",

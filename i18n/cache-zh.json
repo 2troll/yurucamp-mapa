@@ -424,7 +424,11 @@
   "🌍 Muro": "🌍 照片墙",
   "📒 Mi álbum": "📒 我的相册",
   "🎯 Retos": "🎯 挑战",
-  "Fotos": "照片"
+  "Fotos": "照片",
+  "Espera un minuto antes de publicar otra foto": "请等待一分钟后再发布下一张照片",
+  "Has llegado al máximo de fotos por hoy. ¡Mañana más!": "今天的照片发布数量已达上限，明天再来吧！",
+  "El muro no ha aceptado la foto. Inténtalo más tarde.": "照片墙未能接收该照片，请稍后再试。",
+  "Campista": "露营者"
  },
  "datos": {
   "Kōan": "浩庵",

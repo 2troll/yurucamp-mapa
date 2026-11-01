@@ -424,7 +424,11 @@
   "🌍 Muro": "🌍 Mur",
   "📒 Mi álbum": "📒 Mon album",
   "🎯 Retos": "🎯 Défis",
-  "Fotos": "Photos"
+  "Fotos": "Photos",
+  "Espera un minuto antes de publicar otra foto": "Attends une minute avant de publier une autre photo",
+  "Has llegado al máximo de fotos por hoy. ¡Mañana más!": "Tu as atteint la limite de photos pour aujourd'hui. À demain !",
+  "El muro no ha aceptado la foto. Inténtalo más tarde.": "Le mur n'a pas accepté la photo. Réessaie plus tard.",
+  "Campista": "Campeur"
  },
  "datos": {
   "Kōan": "Kōan",
