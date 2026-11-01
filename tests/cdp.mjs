@@ -26,7 +26,7 @@ export function servir(raiz = RAIZ) {
 export async function abrirChrome() {
   const perfil = await mkdtemp(join(tmpdir(), 'yc-chrome-'));
   const proc = spawn(CHROME, ['--headless=new', '--remote-debugging-port=0', `--user-data-dir=${perfil}`, '--no-first-run',
-    '--no-default-browser-check', '--autoplay-policy=no-user-gesture-required', '--hide-scrollbars', 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
+    '--no-default-browser-check', '--autoplay-policy=no-user-gesture-required', '--hide-scrollbars', ...(process.env.CHROME_ARGS || '').split(' ').filter(Boolean), 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
   const wsUrl = await new Promise((ok, ko) => {
     let buf = ''; const t = setTimeout(() => ko(new Error('Chrome no arrancó en 15 s')), 15000);
     proc.stderr.on('data', d => { buf += d; const m = buf.match(/ws:\/\/[^\s]+/); if (m) { clearTimeout(t); ok(m[0]); } });

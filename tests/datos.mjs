@@ -68,7 +68,7 @@ for (const k of idiomas) {
   ok(vacios.length === 0, `${k}: ${vacios.length} traducciones vacías`);
 }
 // Cada tr('…') literal del código debe estar traducido
-const codigo = ['index.html', 'extras.js', 'voces.js', 'sorpresas.js'].filter(f => existsSync(join(RAIZ, f))).map(f => readFileSync(join(RAIZ, f), 'utf8')).join('\n');
+const codigo = ['index.html', 'extras.js', 'voces.js', 'sorpresas.js', 'fotos.js'].filter(f => existsSync(join(RAIZ, f))).map(f => readFileSync(join(RAIZ, f), 'utf8')).join('\n');
 const literales = [...codigo.matchAll(/\btr\('((?:[^'\\]|\\.)+)'/g)].map(m => m[1].replace(/\\'/g, "'"));
 const sinTraducir = [...new Set(literales)].filter(s => !trad.en.ui[s]);
 ok(sinTraducir.length === 0, `${sinTraducir.length} textos tr() sin traducir: ${sinTraducir.slice(0, 5).map(s => `«${s}»`).join(', ')} → node i18n/traducir.mjs`);

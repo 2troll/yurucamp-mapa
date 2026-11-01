@@ -1,0 +1,8 @@
+name = "yurucamp-muro"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+# KV gratis: 1 GB, 1.000 escrituras/día. Cada foto ≈ 3 escrituras.
+[[kv_namespaces]]
+binding = "MURO"
+id = "PENDIENTE"

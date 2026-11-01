@@ -21,6 +21,7 @@
 <script src="casting.js?v=10" defer></script>
 <script src="extras.js?v=9" defer></script>
 <script src="sorpresas.js?v=1" defer></script>
+<script src="fotos.js?v=1" defer></script>
 <script src="anime.js?v=8"></script>
 <script src="lugares.js?v=8"></script>
 <style>
@@ -512,7 +513,7 @@
   @media (max-width: 820px) {
     :root { --dock-h: calc(70px + max(10px, env(safe-area-inset-bottom))); }
     #dock { left: 10px; right: 10px; bottom: max(10px, env(safe-area-inset-bottom)); border-radius: 30px; border: 1px solid var(--linea); padding: 5px;
-      grid-template-columns: repeat(6, 1fr); }
+      grid-template-columns: repeat(7, 1fr); }
     #dock button { min-width: 0; min-height: 56px; border-radius: 24px; }
     #herramientas { top: var(--arriba); right: 10px; border-radius: 24px; }
     .redondo { width: 42px; height: 42px; font-size: 19px; }
@@ -571,6 +572,81 @@
   .tarjeta, .item, .sello, .escena, .pj, .check, .parada, .bloque { content-visibility: auto; contain-intrinsic-size: auto 120px; }
   .rejilla .tarjeta { contain-intrinsic-size: auto 130px; }
   #lista, .contenido { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+
+  /* ---------- Tarjeta fija de lugar (sustituye al globo de Leaflet) ---------- */
+  #tarjeta-lugar { position: fixed; z-index: 1650; left: 50%; bottom: 104px; width: 330px; max-height: calc(100dvh - 140px); overflow-y: auto;
+    border-radius: 24px; padding: 0; opacity: 0; pointer-events: none; transform: translate(-50%, 24px); transition: opacity .2s, transform .25s cubic-bezier(.2,.9,.3,1.1);
+    background: rgba(24,28,38,.94); border: 1px solid var(--linea, rgba(255,255,255,.22)); box-shadow: 0 18px 50px rgba(0,0,0,.45); color: #fff; }
+  #tarjeta-lugar.abierta { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+  #tarjeta-lugar .cerrar { position: absolute; top: 8px; right: 8px; z-index: 2; }
+  #tarjeta-lugar .globo-lugar .acciones { display: grid; }
+  .boton.recrear { background: linear-gradient(135deg, #ff9f0a, #ff6b3d); border-color: transparent; color: #111; text-shadow: none; }
+  /* ---------- Comparador anime / real ---------- */
+  .comparar { --x: 50%; position: relative; width: 100%; overflow: hidden; border-radius: 16px; background: #111; touch-action: pan-y; user-select: none; }
+  .comparar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+  .comparar .anime { clip-path: inset(0 calc(100% - var(--x)) 0 0); }
+  .comparar .raya { position: absolute; top: 0; bottom: 0; left: var(--x); width: 3px; margin-left: -1.5px; background: #fff; box-shadow: 0 0 8px rgba(0,0,0,.6); pointer-events: none; }
+  .comparar .raya::after { content: '⇆'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 34px; height: 34px; border-radius: 50%;
+    background: #fff; color: #111; display: grid; place-items: center; font-weight: 800; }
+  .comparar .etq-c { position: absolute; top: 8px; font-size: 14px; background: rgba(0,0,0,.55); border-radius: 99px; padding: 3px 8px; pointer-events: none; }
+  .comparar .izq { left: 8px; } .comparar .dch { right: 8px; }
+  .comparar input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; margin: 0; }
+  /* ---------- Muro, álbum y retos ---------- */
+  .rejilla-fotos { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; margin-bottom: 14px; }
+  .foto-tarj { border-radius: 20px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14); overflow: hidden; }
+  .foto-tarj .comparar { border-radius: 0; }
+  .foto-pie { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 6px; }
+  .foto-pie p { margin: 0; font-size: 14px; }
+  .foto-quien { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; } .foto-quien small { margin-left: auto; }
+  .foto-lugar { font-size: 13.5px; font-weight: 650; }
+  .foto-acc { display: flex; gap: 6px; flex-wrap: wrap; } .foto-acc .chip { font-size: 12px; padding: 6px 10px; }
+  .vacio { text-align: center; padding: 40px 10px; font-size: 44px; } .vacio p { font-size: 15px; color: var(--suave); }
+  .retos { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; margin-top: 12px; }
+  .reto { display: flex; gap: 10px; align-items: center; text-align: left; padding: 6px; border-radius: 14px; border: 1px solid rgba(255,255,255,.14);
+    background: rgba(255,255,255,.06); color: #fff; cursor: pointer; position: relative; font: inherit; }
+  .reto img { width: 86px; height: 50px; object-fit: cover; border-radius: 10px; flex: none; }
+  .reto span { display: flex; flex-direction: column; min-width: 0; } .reto b { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .reto.hecho { border-color: #30d158; } .reto i { position: absolute; right: 8px; top: 6px; font-style: normal; }
+  .publicar { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .publicar input, .publicar textarea { font: inherit; font-size: 16px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.25); background: rgba(0,0,0,.3); color: #fff; }
+  .publicar .normas { font-size: 12.5px; color: var(--suave); display: flex; gap: 8px; align-items: flex-start; }
+  /* ---------- Cámara ---------- */
+  #camara { position: fixed; inset: 0; z-index: 3000; background: #000; color: #fff; display: flex; flex-direction: column; }
+  #camara[hidden] { display: none; }
+  #camara header { display: flex; align-items: center; gap: 10px; padding: max(10px, env(safe-area-inset-top)) 12px 8px; }
+  #camara .cam-titulo { flex: 1; min-width: 0; display: flex; flex-direction: column; } #camara .cam-titulo b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #camara .cam-titulo small { color: rgba(255,255,255,.75); font-size: 12.5px; }
+  .cam-visor { flex: 1; min-height: 0; display: grid; place-items: center; position: relative; padding: 0 8px; }
+  .cam-marco { --aspecto: 16 / 9; --op: .45; position: relative; aspect-ratio: var(--aspecto); width: min(100%, calc((100dvh - 260px) * 16 / 9)); max-height: 100%; overflow: hidden; border-radius: 14px; background: #222; }
+  .cam-marco video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .cam-fantasma { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: var(--op); pointer-events: none; }
+  .cam-mini { display: none; position: absolute; right: 8px; bottom: 8px; width: 34%; border-radius: 8px; border: 2px solid #fff; pointer-events: none; }
+  .cam-marco.modo-mini .cam-fantasma { display: none; } .cam-marco.modo-mini .cam-mini { display: block; }
+  .cam-girar { display: none; position: absolute; bottom: 8px; font-size: 13px; background: rgba(0,0,0,.6); padding: 4px 10px; border-radius: 99px; }
+  @media (orientation: portrait) { .cam-girar { display: block; } }
+  .cam-error { position: absolute; max-width: 300px; text-align: center; background: rgba(0,0,0,.75); padding: 12px; border-radius: 14px; }
+  .cam-escenas { display: flex; gap: 6px; overflow-x: auto; padding: 6px 12px; } .cam-escenas:empty { display: none; }
+  .cam-escenas img { height: 46px; border-radius: 8px; opacity: .6; border: 2px solid transparent; cursor: pointer; }
+  .cam-escenas img.sel { opacity: 1; border-color: #ffd60a; }
+  #camara footer { padding: 6px 16px max(16px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 10px; align-items: center; }
+  .cam-op { display: flex; gap: 10px; align-items: center; width: min(420px, 100%); } .cam-op input { flex: 1; accent-color: #ffd60a; }
+  .cam-botones { display: flex; gap: 34px; align-items: center; }
+  .cam-botones label.redondo { cursor: pointer; display: grid; place-items: center; }
+  .disparador { width: 74px; height: 74px; border-radius: 50%; border: 5px solid #fff; background: rgba(255,255,255,.25); cursor: pointer; transition: transform .1s; }
+  .disparador:active, .disparador.flash { transform: scale(.88); background: #fff; }
+  .cam-resultado { position: absolute; inset: 0; background: rgba(10,12,18,.97); overflow-y: auto; padding: max(16px, env(safe-area-inset-top)) 16px 24px; }
+  .cam-resultado[hidden] { display: none; }
+  .res-caja { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; } .res-caja h3 { margin: 0; font-size: 22px; }
+  body.con-camara #dock, body:has(.hoja.abierta) #hoy { visibility: hidden; }
+  @media (max-width: 820px) {
+    #tarjeta-lugar { left: 8px; right: 8px; width: auto; bottom: calc(var(--dock-h) + 8px); max-height: calc(100dvh - var(--arriba, 80px) - var(--dock-h) - 20px);
+      transform: translateY(30px); border-radius: 24px; }
+    #tarjeta-lugar.abierta { transform: none; }
+    #tarjeta-lugar .globo-lugar img { height: 130px; }
+    #dock button { font-size: 10.5px; padding: 6px 2px; } #dock button span { font-size: 20px; }
+    .rejilla-fotos { grid-template-columns: 1fr; }
+    .retos { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
@@ -643,10 +719,19 @@
   <div class="contenido fino" id="personajes"></div>
 </section>
 
+<section class="hoja cristal" id="hoja-fotos">
+  <header><div><h1>📸 Anime vs. real</h1><p class="sub" id="fotos-sub"></p>
+      <div class="segmentos" id="seg-fotos"><button data-s="muro" class="activo">🌍 Muro</button><button data-s="album">📒 Mi álbum</button><button data-s="retos">🎯 Retos</button></div></div></header>
+  <div class="contenido fino" id="fotos"></div>
+</section>
+
+<section id="tarjeta-lugar" class="cristal fino" aria-live="polite"></section>
+
 <nav id="dock" class="cristal">
   <button data-vista="mapa" class="activo"><span>🗺️</span>Mapa</button>
   <button data-vista="palabras"><span>📖</span>Palabras</button>
   <button data-vista="quiz"><span>🎯</span>Quiz</button>
+  <button data-vista="fotos"><span>📸</span>Fotos</button>
   <button data-vista="mochila"><span>🧭</span>Viaje</button>
   <button data-vista="personajes"><span>👥</span>Voces</button>
   <button data-vista="pasaporte"><span>🏅</span>Sellos</button>
@@ -748,7 +833,7 @@ function ruby(ja, kana) {
 /* ================= Mapa ================= */
 let seleccionado = null;
 const tactil = matchMedia('(pointer: coarse)').matches;
-const mapa = L.map('mapa', { zoomControl: false, attributionControl: false, preferCanvas: true, updateWhenZooming: false, wheelPxPerZoomLevel: 90, fadeAnimation: !tactil }).setView([35.4, 138.4], 8);
+const mapa = L.map('mapa', { zoomControl: false, attributionControl: false, preferCanvas: true, updateWhenZooming: false, zoomSnap: .25, zoomDelta: .5, bounceAtZoomLimits: false, wheelPxPerZoomLevel: 90, fadeAnimation: !tactil }).setView([35.4, 138.4], 8);
 const pie = 'Capturas: ©あfろ・芳文社／野外活動委員会';
 const satelite = L.layerGroup([
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imágenes © Esri · ' + pie }),
@@ -900,9 +985,34 @@ const lugaresVistos = new Set(guardado.leer('lugaresVistos', []));
 const marcasLugar = LUGARES.map((l, i) => new PinLugar([l.lat, l.lng], { renderer: renderLugares, radius: 14, fillColor: COLOR_LUGAR[l.c],
     emoji: CATEGORIAS_LUGAR[l.c].emoji, visto: lugaresVistos.has(i), bubblingMouseEvents: false })
   .bindTooltip(l.n, { className: 'cristal-tt', direction: 'top', offset: [0, -14] })
-  .bindPopup(() => globoLugar(i), { maxWidth: 300, minWidth: 250, autoPanPaddingTopLeft: matchMedia('(max-width: 820px)').matches ? [16, 110] : [400, 30], autoPanPaddingBottomRight: [16, matchMedia('(max-width: 820px)').matches ? 150 : 110] }));
-// En el móvil el panel de abajo se aparta mientras hay un lugar abierto
-mapa.on('popupopen', () => document.body.classList.add('con-globo')).on('popupclose', () => document.body.classList.remove('con-globo'));
+  .on('click', () => abrirLugar(i)));
+// Antes era un globo de Leaflet pegado al mapa: al pellizcar se movía, se cortaba arriba y al alejarse
+// desaparecía con su marcador. Ahora es una tarjeta fija; el zoom solo mueve el mapa por debajo
+let lugarSel = null;
+function abrirLugar(i, centrar) {
+  const antes = lugarSel; lugarSel = i;
+  if (antes !== null && antes !== i) { Object.assign(marcasLugar[antes].options, { sel: false }); marcasLugar[antes].setRadius(14); }
+  const m = marcasLugar[i]; Object.assign(m.options, { sel: true }); m.setRadius(18);
+  if (!mapa.hasLayer(m)) m.addTo(mapa);
+  m.bringToFront();
+  const t = $('#tarjeta-lugar'); t.innerHTML = ''; t.appendChild(globoLugar(i)); t.scrollTop = 0;
+  const x = document.createElement('button'); x.className = 'cerrar'; x.setAttribute('aria-label', tr('Cerrar')); x.textContent = '✕'; x.onclick = cerrarLugar; t.prepend(x);
+  t.classList.add('abierta'); document.body.classList.add('con-globo');
+  const l = LUGARES[i];
+  if (centrar) mapa.setView([l.lat, l.lng], Math.max(mapa.getZoom(), 14), { animate: !esMovil() });
+  else { // que el punto no quede debajo de la tarjeta
+    const r = t.getBoundingClientRect(), p = mapa.latLngToContainerPoint([l.lat, l.lng]);
+    if (p.y > r.top - 30 || p.y < 90) mapa.panBy([0, p.y - (r.top - 30) / 2], { animate: !esMovil() });
+  }
+}
+function cerrarLugar() {
+  if (lugarSel === null) return false;
+  const m = marcasLugar[lugarSel]; Object.assign(m.options, { sel: false }); m.setRadius(14);
+  lugarSel = null; $('#tarjeta-lugar').classList.remove('abierta'); document.body.classList.remove('con-globo');
+  ponerCapasLugar(true); return true;
+}
+window.abrirLugar = abrirLugar;
+mapa.on('click', () => cerrarLugar());
 function globoLugar(i) {
   const l = LUGARES[i], cat = CATEGORIAS_LUGAR[l.c], [pk, pkana, pes] = cat.palabra, voz = cat.voz;
   const div = document.createElement('div'); div.className = 'globo-lugar';
@@ -916,8 +1026,10 @@ function globoLugar(i) {
       <div class="acciones">
         <button class="boton" data-nombre="1">${tr('🔊 Oír el nombre')}</button>
         <button class="boton ${lugaresVistos.has(i) ? 'hecho' : ''}" data-visto="1">${tr(lugaresVistos.has(i) ? '💮 Estuve' : '📍 Estuve aquí')}</button>
+        ${l.f ? `<button class="boton grande recrear" data-recrear="1">${tr('📸 Recrear escena')}${window.Fotos?.hechas.has(l.f) ? ' 💮' : ''}</button>` : ''}
         <a class="boton grande" href="https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lng}" target="_blank" rel="noopener">${tr('🚗 Cómo llegar')}</a>
       </div></div>`;
+  const rec = div.querySelector('[data-recrear]'); if (rec) rec.onclick = () => window.Fotos?.abrir(l.f);
   div.querySelector('[data-p]').onclick = () => hablar(pk, voz);
   div.querySelector('[data-nombre]').onclick = () => hablar(l.n.replace(/（.*?）|\(.*?\)/g, ''), voz);
   const img = div.querySelector('img'); if (img) img.onclick = () => verGrande(img.src);
@@ -943,9 +1055,14 @@ function pintarCapasLugar() {
   });
 }
 const ZOOM_LUGARES = 9; // de lejos los lugares se amontonan: se muestran al acercarse
-function ponerCapasLugar() {
-  const cerca = mapa.getZoom() >= ZOOM_LUGARES;
-  marcasLugar.forEach((m, i) => cerca && capasLugar.has(LUGARES[i].c) ? (mapa.hasLayer(m) || m.addTo(mapa)) : (mapa.hasLayer(m) && mapa.removeLayer(m)));
+// Solo toca el mapa al cruzar el umbral o cambiar capas: antes añadía/quitaba 451 marcadores en cada zoom
+let estadoCapas = '';
+function ponerCapasLugar(forzar) {
+  const cerca = mapa.getZoom() >= ZOOM_LUGARES, clave = cerca + [...capasLugar].sort().join();
+  if (!forzar && clave === estadoCapas) return;
+  estadoCapas = clave;
+  // El lugar abierto se queda aunque te alejes, para no perder dónde estaba
+  marcasLugar.forEach((m, i) => (cerca && capasLugar.has(LUGARES[i].c)) || i === lugarSel ? (mapa.hasLayer(m) || m.addTo(mapa)) : (mapa.hasLayer(m) && mapa.removeLayer(m)));
 }
 mapa.on('zoomend', () => ponerCapasLugar());
 
@@ -1061,6 +1178,7 @@ function abrirFicha(i) {
       ${c.fotos.length > 1 ? `<div><h4 style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--suave);margin-bottom:8px">${tr('📸 Escenas del anime ({n})', { n: c.fotos.length })}</h4>
         <div id="galeria" class="fino">${c.fotos.map(f => `<img decoding="async" src="${f}" alt="" data-grande loading="lazy">`).join('')}</div></div>`
         : (c.fotos.length ? '' : `<p class="sub">${tr('Sale en la película; el mapa de fans no tiene capturas de este sitio.')}</p>`)}
+      ${c.fotos.length ? `<button class="boton grande recrear" id="f-recrear">${tr('📸 Recrear una escena aquí ({n})', { n: c.fotos.length })}${c.fotos.some(f => window.Fotos?.hechas.has(f)) ? ' 💮' : ''}</button>` : ''}
       <div class="acciones">
         <button class="boton grande ${visitados.has(i) ? 'hecho' : ''}" id="f-visto">${tr(visitados.has(i) ? '💮 ¡Sellado! Estuviste aquí' : '📍 Estuve aquí — sellar pasaporte')}</button>
         <button class="boton grande" id="f-ruta">${tr(ruta.includes(i) ? '✓ En tu ruta (tocar para quitar)' : '➕ Añadir a mi ruta')}</button>
@@ -1072,6 +1190,8 @@ function abrirFicha(i) {
   $('#ficha').classList.add('abierta'); document.body.classList.add('ficha-abierta'); abrirCapas(false);
   $('#f-cerrar').onclick = cerrarFicha;
   $('#f-visto').onclick = () => alternarVisita(i);
+  if ($('#f-recrear')) $('#f-recrear').onclick = () => window.Fotos?.abrir(c.fotos);
+  cerrarLugar();
   $('#f-ruta').onclick = () => { alternarRuta(i); $('#f-ruta').textContent = tr(ruta.includes(i) ? '✓ En tu ruta (tocar para quitar)' : '➕ Añadir a mi ruta'); };
   pintarTiempo(i);
   const anfitriona = c.quien[Math.floor(Math.random() * c.quien.length)];
@@ -1715,19 +1835,20 @@ function irA(vista) {
   const enMapa = vista === 'mapa';
   $('#panel').style.opacity = enMapa ? 1 : 0; $('#panel').style.pointerEvents = enMapa ? '' : 'none';
   $('#herramientas').style.opacity = enMapa ? 1 : 0; $('#herramientas').style.pointerEvents = enMapa ? '' : 'none';
-  if (!enMapa) { $('#ficha').classList.remove('abierta'); document.body.classList.remove('ficha-abierta'); abrirCapas(false); mapa.closePopup(); }
+  if (!enMapa) { $('#ficha').classList.remove('abierta'); document.body.classList.remove('ficha-abierta'); abrirCapas(false); cerrarLugar(); }
   if (vista === 'palabras') pintarPalabras();
   if (vista === 'quiz') pintarMenuQuiz();
   if (vista === 'mochila') pintarMochila();
   if (vista === 'pasaporte') pintarPasaporte();
   if (vista === 'personajes') pintarPersonajes();
+  if (vista === 'fotos') window.Fotos?.pintar();
 }
 document.querySelectorAll('#dock button').forEach(b => b.onclick = () => irA(b.dataset.vista));
 
 const visor = $('#visor');
 function verGrande(src) { visor.querySelector('img').src = src; visor.classList.add('abierto'); }
 visor.onclick = () => visor.classList.remove('abierto');
-addEventListener('keydown', e => { if (e.key === 'Escape') { visor.classList.contains('abierto') ? visor.classList.remove('abierto') : cerrarFicha(); } });
+addEventListener('keydown', e => { if (e.key === 'Escape') { visor.classList.contains('abierto') ? visor.classList.remove('abierto') : (cerrarLugar() || cerrarFicha()); } });
 
 actualizarMapa(true);
 dibujarRuta();
@@ -1745,10 +1866,11 @@ addEventListener('beforeinstallprompt', e => {
 });
 // Botón «atrás» de Android: cierra lo que esté abierto antes de salir de la app
 window.Capacitor?.Plugins?.App?.addListener('backButton', () => {
+  if (window.cerrarCamara?.()) return;
   if (window.cerrarExtras?.()) return;
   if (visor.classList.contains('abierto')) return visor.classList.remove('abierto');
   if ($('#capas').classList.contains('abierto')) return abrirCapas(false);
-  if (document.querySelector('.leaflet-popup')) return mapa.closePopup();
+  if (cerrarLugar()) return;
   if ($('#ficha').classList.contains('abierta')) return cerrarFicha();
   if (escena) { pararEscena(); escena = null; return pintarDialogos(); }
   if (document.querySelector('.hoja.abierta')) return irA('mapa');

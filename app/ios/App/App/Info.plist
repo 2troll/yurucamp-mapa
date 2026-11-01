@@ -26,6 +26,10 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Para recrear las escenas del anime con tu cámara y compararlas con la foto real.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Para elegir una foto tuya y compararla con la escena del anime.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Para ordenar los campings por cercanía y para que la brújula te diga a cuántos km está el Fuji. Your location is only used on your phone.</string>
 	<key>NSMicrophoneUsageDescription</key>

@@ -17,7 +17,7 @@ const ui = new Set();
 const literales = trozo => [...trozo.matchAll(/'((?:[^'\\\n]|\\.)*)'/g)].map(m => m[1].replace(/\\'/g, "'"));
 const conLetras = s => /[A-Za-zÀ-ÿ]{2}/.test(s) && !/^https?:|^[#.]|\$\{/.test(s);
 const empiezaConEmoji = s => /^\P{L}/u.test(s) && !/^[\s\d]/.test(s);
-const html = leer('index.html'), extras = leer('extras.js') + '\n' + leer('sorpresas.js');
+const html = leer('index.html'), extras = leer('extras.js') + '\n' + leer('sorpresas.js') + '\n' + leer('fotos.js');
 const js = html.slice(html.indexOf('<script>\nif (typeof CAMPINGS')) + extras;
 
 // a) Todo literal dentro de tr( … ), también en ternarios; se salta el objeto de variables
