@@ -1,0 +1,4 @@
+# Todos los robots bienvenidos, también los de IA (OAI-SearchBot, GPTBot, ClaudeBot, PerplexityBot, Bingbot)
+User-agent: *
+Allow: /
+Sitemap: https://2troll.github.io/yurucamp-mapa/sitemap.xml

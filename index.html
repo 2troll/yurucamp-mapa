@@ -3,7 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Yuru Camp△ Japón</title>
+<title>Yuru Camp△ Mapa: campings y lugares reales del anime · ゆるキャン△ 聖地巡礼</title>
+<meta name="description" content="Mapa gratis de los 21 campings reales y 451 lugares de Yuru Camp△ (Laid-Back Camp): guía por episodios, modo peregrino con GPS, cámara para recrear escenas, muro de fotos y japonés de acampada. ES · EN · 日本語 · 中文 · 한국어 · FR · العربية.">
+<link rel="canonical" href="https://2troll.github.io/yurucamp-mapa/">
+<link rel="alternate" type="text/html" hreflang="es" href="https://2troll.github.io/yurucamp-mapa/guia/" title="Guía de los campings de Yuru Camp△">
+<link rel="alternate" type="text/html" hreflang="en" href="https://2troll.github.io/yurucamp-mapa/guia/en.html" title="Yuru Camp△ campsite guide">
+<meta property="og:type" content="website"><meta property="og:title" content="Yuru Camp△ Mapa · ゆるキャン△ 聖地巡礼">
+<meta property="og:description" content="Los campings y lugares reales del anime en un mapa: episodios, modo peregrino con GPS y fotos anime vs. realidad.">
+<meta property="og:url" content="https://2troll.github.io/yurucamp-mapa/"><meta property="og:image" content="https://2troll.github.io/yurucamp-mapa/fotos-web/xd0EbqJmpt52pzTiVfy7yZ3Y.jpg"><meta name="twitter:card" content="summary_large_image">
+<meta name="author" content="Tony Hanma">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Yuru Camp△ Mapa · ゆるキャン△", "url": "https://2troll.github.io/yurucamp-mapa/", "applicationCategory": "TravelApplication", "operatingSystem": "Web, Android, iOS", "offers": {"@type": "Offer", "price": 0, "priceCurrency": "EUR"}, "inLanguage": ["es", "en", "ja", "zh", "ko", "fr", "ar"], "description": "Mapa gratuito de los 21 campings reales y 451 lugares de Yuru Camp△ (Laid-Back Camp), con guía por episodios, modo peregrino con GPS, cámara para recrear escenas y japonés de acampada.", "author": {"@type": "Person", "name": "Tony Hanma", "url": "https://tonykansaiguide.com/"}}</script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0b1a24">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -22,7 +31,7 @@
 <script src="extras.js?v=10" defer></script>
 <script src="sorpresas.js?v=1" defer></script>
 <script src="fotos.js?v=3" defer></script>
-<script src="vivir.js?v=1" defer></script>
+<script src="vivir.js?v=2" defer></script>
 <script src="anime.js?v=8"></script>
 <script src="lugares.js?v=8"></script>
 <style>
@@ -716,10 +725,19 @@
   body.con-globo #peregrino, body.con-capas #peregrino { visibility: hidden; }
   @media (max-width: 820px) { #peregrino { bottom: calc(var(--dock-h) + 140px); } #panel.medio ~ #peregrino, #panel.lleno ~ #peregrino { visibility: hidden; }
     .diario-cifras { grid-template-columns: repeat(2, 1fr); } .rejilla-ep, .ep-lugares { grid-template-columns: 1fr; } }
+
+  .tony { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border-radius: 18px; background: linear-gradient(135deg, rgba(37,211,102,.16), rgba(255,255,255,.06));
+    border: 1px solid rgba(37,211,102,.45); margin-top: 14px; }
+  .tony img { width: 56px; height: 60px; border-radius: 14px; object-fit: cover; flex: none; }
+  .tony > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; } .tony small { color: var(--suave); font-size: 12.5px; line-height: 1.4; }
+  .tony-acc { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; } .tony-acc .boton { padding: 8px 12px; font-size: 13px; }
+  .boton.wa { background: #25d366; color: #062; border-color: transparent; text-shadow: none; font-weight: 800; }
 </style>
 </head>
 <body>
 <div id="mapa"></div>
+<noscript><h1>Yuru Camp△ Mapa · ゆるキャン△ 聖地巡礼</h1><p>Mapa de los campings y lugares reales del anime Yuru Camp△ (Laid-Back Camp).</p>
+  <p><a href="guia/">Guía de los 21 campings reales (español)</a> · <a href="guia/en.html">The 21 real campsites (English)</a> · <a href="https://wa.me/34634193106">WhatsApp: Tony Hanma, guía en Japón</a></p></noscript>
 <nav id="herramientas" class="cristal" aria-label="Herramientas del mapa">
   <button id="capa" class="redondo" title="Estilo del mapa y lugares" aria-label="Capas del mapa">🗺️</button>
   <button id="yo" class="redondo" title="Dónde estoy" aria-label="Dónde estoy">📍</button>
@@ -734,6 +752,7 @@
   <b class="titulo-capas">Lugares del anime</b>
   <div id="capas-lugar"></div>
   <p class="creditos" id="creditos-mapa"></p>
+  <p class="creditos"><a href="guia/">📖 Guía de los campings</a> · <a href="guia/en.html" hreflang="en">Campsite guide (EN)</a> · <a href="privacidad.html">Privacidad</a></p>
 </section>
 
 <aside id="panel" class="cristal">
@@ -895,6 +914,16 @@ function km(a, b) {
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(r(a[0])) * Math.cos(r(b[0])) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
 }
+// Contacto del creador: WhatsApp de guía de Tony, con el sitio desde el que escribe ya puesto en el mensaje
+const WHATSAPP_TONY = '34634193106';
+function tarjetaTony(sitio) {
+  const msg = tr('Hola Tony, te escribo desde la app de Yuru Camp') + (sitio ? ` (${sitio})` : '') + '. ';
+  return `<div class="tony"><img src="iconos/tony.jpg" alt="Tony Hanma" loading="lazy" decoding="async" width="56" height="60">
+    <div><b>${tr('¿Viajas a Japón?')}</b><small>${tr('Tony, el creador de esta app, es guía en Japón (español · English · العربية). Escríbele y te ayuda con tu viaje.')}</small>
+    <div class="tony-acc"><a class="boton wa" href="https://wa.me/${WHATSAPP_TONY}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">${tr('💬 WhatsApp a Tony')}</a>
+    <a class="boton" href="https://tonykansaiguide.com/" target="_blank" rel="noopener">tonykansaiguide.com</a></div></div></div>`;
+}
+window.tarjetaTony = tarjetaTony;
 function ruby(ja, kana) {
   // Furigana sobre todo el nombre; los nombres mezclan kanji y katakana y no se pueden alinear carácter a carácter sin diccionario
   return /[一-龯]/.test(ja) ? `<ruby class="jp">${esc(ja)}<rt>${esc(kana)}</rt></ruby>` : `<span class="jp">${esc(ja)}</span>`;
@@ -1286,6 +1315,7 @@ function abrirFicha(i) {
         <a class="boton" href="https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}" target="_blank" rel="noopener">${tr('🗺️ Google Maps')}</a>
         <a class="boton" href="https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}" target="_blank" rel="noopener">${tr('🚗 Cómo llegar')}</a>
       </div>
+      ${tarjetaTony(c.nombre)}
     </div>`;
   $('#ficha').scrollTop = 0;
   $('#ficha').classList.add('abierta'); document.body.classList.add('ficha-abierta'); abrirCapas(false);

@@ -77,7 +77,8 @@
       <h4 class="ep-h">${esc(tr('📍 Los sitios reales de este episodio'))}</h4>
       <div class="ep-lugares">${e.lugares.map(i => { const l = LUGARES[i], cat = CATEGORIAS_LUGAR[l.c], hecho = lugaresVistos.has(i) || window.Fotos?.hechas.has(l.f);
         return `<button class="reto ${hecho ? 'hecho' : ''}" data-l="${i}">${l.f ? `<img src="${l.f}" alt="" loading="lazy" decoding="async">` : `<span class="ico-l">${cat.emoji}</span>`}
-          <span><b class="jp">${esc(l.n)}</b><small class="sub">${cat.emoji} ${esc(cat.titulo)}${l.nota?.trim() ? ' · ' + esc(l.nota) : ''}</small></span>${hecho ? '<i>💮</i>' : ''}</button>`; }).join('')}</div>`;
+          <span><b class="jp">${esc(l.n)}</b><small class="sub">${cat.emoji} ${esc(cat.titulo)}${l.nota?.trim() ? ' · ' + esc(l.nota) : ''}</small></span>${hecho ? '<i>💮</i>' : ''}</button>`; }).join('')}</div>
+      ${window.tarjetaTony?.(tituloEp(e)) || ''}`;
     caja.scrollTop = 0; $v('#hoja-personajes .contenido').scrollTop = 0;
     caja.querySelector('[data-a="volver"]').onclick = () => { abierto = null; pintarEpisodios(); };
     caja.querySelector('[data-a="revivir"]').onclick = () => revivir(e);
@@ -242,7 +243,7 @@
         <div><b>${lugaresVistos.size}</b><small>${esc(tr('sitios pisados'))}</small></div>
         <div><b>${fotos.length}</b><small>${esc(tr('escenas recreadas'))}</small></div>
         <div><b>${vividos.length}</b><small>${esc(tr('episodios vividos'))}${completos.length ? ` · ${completos.length} 💮` : ''}</small></div></div>
-      <div class="diario-lista"></div>`;
+      <div class="diario-lista"></div>${window.tarjetaTony?.(tr('Mi viaje')) || ''}`;
     const l = caja.querySelector('.diario-lista');
     if (!hechos.length) { l.innerHTML = `<div class="vacio">📔<p>${esc(tr('Tu viaje empieza aquí. Activa 🚶 en el mapa y te aviso cuando pises una escena del anime.'))}</p></div>`; return; }
     let dia = null;

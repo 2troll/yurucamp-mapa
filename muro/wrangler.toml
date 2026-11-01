@@ -5,7 +5,7 @@ compatibility_date = "2026-10-01"
 # KV gratis: 1 GB, 1.000 escrituras/día. Cada foto ≈ 3 escrituras.
 [[kv_namespaces]]
 binding = "MURO"
-id = "PENDIENTE"
+id = "e4006da2d37047069553d37adf499825"
 
 # Frena ráfagas (KV no es atómico: sin esto, 12 envíos simultáneos pasaban todos). Gratis.
 [[ratelimits]]

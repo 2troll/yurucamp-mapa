@@ -27,7 +27,9 @@ export default {
       // Moderación: DELETE borra del todo; POST /restaurar/:id devuelve al muro una foto ocultada por denuncias
       if ((req.method === 'DELETE' && ruta === 'posts' && arg) || (req.method === 'POST' && ruta === 'restaurar' && arg)) {
         if (!env.ADMIN || req.headers.get('authorization') !== 'Bearer ' + env.ADMIN) return json(req, { error: 'no autorizado' }, 401);
-        return json(req, req.method === 'DELETE' ? { borrado: await borrar(env, arg) } : { restaurado: await restaurar(env, arg) });
+        const r = req.method === 'DELETE' ? { borrado: await borrar(env, arg) } : { restaurado: await restaurar(env, arg) };
+        await Promise.all(['/img/' + arg, '/posts'].map(x => caches.default.delete(new Request(new URL(x, req.url).toString()))));
+        return json(req, r);
       }
       if (req.method === 'GET' && ruta === 'ocultos') {
         if (!env.ADMIN || req.headers.get('authorization') !== 'Bearer ' + env.ADMIN) return json(req, { error: 'no autorizado' }, 401);
